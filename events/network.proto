@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Lansnoop;
+
+//  Represents a layer two Network.
+//  A Network contains Interfaces.  Interface.network_id implements this relationship.
+
+message Network {
+    uint32 id = 1;  //    Immutable.
+    bool fini = 2;
+}

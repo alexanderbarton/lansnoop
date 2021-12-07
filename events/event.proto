@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Lansnoop;
+
+import "network.proto";
+import "interface.proto";
+
+message Event {
+    fixed64 timestamp = 1; // Nanoseconds since the epoch.
+    uint64 packet = 2; // Current packet count.
+    oneof type {
+        Network network = 3;
+        Interface interface = 4;
+    }
+}
