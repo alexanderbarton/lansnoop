@@ -1,9 +1,12 @@
 #include <ostream>
+#include <fstream>
 #include <iomanip>
+#include <stdexcept>
 #include "Model.hpp"
 #include "event.pb.h"
 #include "EventSerialization.hpp"
 
+#include "/home/abarton/debug.hpp"
 
 
 void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_address,
@@ -63,8 +66,79 @@ void Model::report(std::ostream& o) const
             const Interface& interface = this->interfaces_by_address.find(address)->second;
             o << "    Interface " << interface.id << "\n";
             o << "        address:    " << interface.address << "\n";
-            o << "        network id: " << interface.network_id << "\n";
+            o << "        network ID: " << interface.network_id << "\n";
+            o << "        maker:      " << interface.maker << "\n";
         }
+    }
+}
+
+
+void Model::load_oui(const std::string& path)
+{
+    //  This seems to be an ISO-4180 formatted file.
+
+    std::ifstream in(path);
+    if (!in.good())
+        throw std::invalid_argument("unable to read OUI CSV file");
+
+    int count = 0;
+    char line[1024];
+    while (in.getline(line, sizeof(line), '\n')) {
+        if (!count++)
+            continue; // Skip column header line.
+        char* ptr = line;
+
+        //  Discard first column.
+        while (*ptr && *ptr != ',')
+            ptr++;
+        if (*ptr != ',')
+            throw std::invalid_argument("OUI parse error, missing first comma");
+        ptr++;
+
+        //  Second column should contain a 6-digit hex OUI value.
+        int oui = 0;
+        for (int i=0; i<6; ++i) {
+            int digit = tolower(*ptr++);
+            if (digit >= 'a')
+                digit = digit - 'a' + 10;
+            else
+                digit -= '0';
+            oui = (oui << 4) + digit;
+        }
+        if (*ptr++ != ',')
+            throw std::invalid_argument("OUI parse error, expected second comma");
+
+        //  Third column is organization name.
+        bool quoted = (*ptr == '"');
+        if (quoted)
+            ++ptr;
+        char* name_start = ptr;
+        if (quoted) {
+            //  A "" inside the field is a single quote, and not a field delimiter.
+            while (*ptr) {
+                if (*ptr == '"' && *(ptr+1) == '"')
+                    ptr += 2;
+                else if (*ptr == '"')
+                    break;
+                else
+                    ++ptr;
+            }
+            if (*ptr != '"')
+                throw std::invalid_argument("OUI parse error, third column, unmatched quote");
+        }
+        else {
+            while (*ptr && *ptr != ',')
+                ++ptr;
+            if (*ptr != ',')
+                throw std::invalid_argument("OUI parse error, expected third comma");
+        }
+
+        std::string org_name(name_start, ptr);
+
+        //  Discard the remaining columns.
+
+        this->ouis[oui] = org_name;
+
     }
 }
 
@@ -84,10 +158,17 @@ long Model::new_network()
 //  Assign it to the provided network.
 std::map<Model::MacAddress, Model::Interface>::iterator Model::new_interface(const MacAddress& address, long network_id)
 {
+    int oui = (int(address[0]) << 16) | (int(address[1]) << 8) | int(address[2]);
+    show(this->ouis.size());
+    showx(oui);
+    auto ouis_i = this->ouis.find(oui);
+
     Interface interface;
     interface.address = address;
     interface.id = this->next_id++;
     interface.network_id = network_id;
+    if (ouis_i != this->ouis.end())
+        interface.maker = ouis_i->second;
     this->interfaces_by_address[address] = interface;
     this->interfaces_by_id[interface.id] = address;
     this->networks[network_id].interfaces.insert(interface.id);
@@ -138,6 +219,7 @@ void Model::emit(const Interface& interface, bool fini)
     event.mutable_interface()->set_fini(fini);
     event.mutable_interface()->set_network_id(interface.network_id);
     event.mutable_interface()->set_address(std::string(interface.address.begin(), interface.address.end()));
+    event.mutable_interface()->set_maker(interface.maker);
     std::cout << event;
 }
 

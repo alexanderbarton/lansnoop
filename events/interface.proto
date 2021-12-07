@@ -5,6 +5,7 @@ package Lansnoop;
 message Interface {
     uint32 id = 1;  // Immutable.
     bool fini = 2;
-    bytes address = 3; // 6-byte Ethernet MAC address.  Immutable.
+    bytes address = 3; // 6-byte Ethernet MAC address.  EUI-48.  Immutable.
     uint32 network_id = 4; //  The network this interfaces is attached to.
+    string maker = 5; // Organization assigned the address's OUI, if known.
 }

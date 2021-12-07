@@ -9,6 +9,8 @@
 #include "EventSerialization.hpp"
 #include "Snoop.hpp"
 
+#include "/home/abarton/debug.hpp"
+
 
 static pcap_t* global_libpcap = nullptr;
 
@@ -175,7 +177,7 @@ int main(int argc, char **argv)
 
         GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-        std::string file, iface;
+        std::string file, iface, oui_path;
 
         bool verbose = false;
         int i = 1;
@@ -185,6 +187,12 @@ int main(int argc, char **argv)
                 if (i >= argc)
                     throw std::invalid_argument("-i expects an interface name, none given");
                 iface = argv[i++];
+            }
+            else if (std::string("--oui") == argv[i]) {
+                ++i;
+                if (i >= argc)
+                    throw std::invalid_argument("--oui expects a CSV file name, none given");
+                oui_path = argv[i++];
             }
             else if (std::string("-r") == argv[i]) {
                 ++i;
@@ -207,6 +215,8 @@ int main(int argc, char **argv)
         register_signal_handler();
 
         Snoop snoop;
+        if (oui_path.size())
+            snoop.get_model().load_oui(oui_path);
 
         pcap_t* libpcap;
         if (file.size())

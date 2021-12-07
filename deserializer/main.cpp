@@ -32,6 +32,7 @@ static void print(const Lansnoop::Interface& interface)
     }
     std::cout << "\n";
     std::cout << "    " << "network_id: " << interface.network_id() << "\n";
+    std::cout << "    " << "maker:      " << interface.maker() << "\n";
 }
 
 

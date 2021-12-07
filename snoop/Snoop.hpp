@@ -24,7 +24,7 @@ public:
     Snoop();
     void parse_ethernet(const timeval& ts, const unsigned char* frame, unsigned frame_length);
     const Stats& get_stats() const { return stats; }
-    const Model& get_model() const { return model; }
+    Model& get_model() { return model; }
 
 private:
     Stats stats;

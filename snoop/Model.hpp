@@ -19,6 +19,7 @@ public:
         long id;
         std::array<unsigned char, 6> address;  // MAC address
         long network_id; //  All interfaces belong to exactly one network.
+        std::string maker;
     };
 
     void note_time(long t) { this->now = t; }
@@ -30,6 +31,10 @@ public:
 
     //  Generate a topology report.
     void report(std::ostream&) const;
+
+    //  Load the OUI table from a CSV file.
+    //  Obtain from http://standards-oui.ieee.org/oui/oui.csv
+    void load_oui(const std::string& path);
 
 private:
 
@@ -47,6 +52,8 @@ private:
 
     //  Maps an interface's ID to its address.
     std::map<long, MacAddress> interfaces_by_id;
+
+    std::map<int, std::string> ouis;  //  Map OUIs to organization names.
 
     long new_network();
 
