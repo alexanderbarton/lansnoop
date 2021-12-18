@@ -116,7 +116,7 @@ void Model::load_oui(const std::string& path)
         if (quoted) {
             //  A "" inside the field is a single quote, and not a field delimiter.
             while (*ptr) {
-                if (*ptr == '"' && *(ptr+1) == '"')
+                if (ptr[0] == '"' && ptr[1] == '"')
                     ptr += 2;
                 else if (*ptr == '"')
                     break;
