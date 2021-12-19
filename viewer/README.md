@@ -2,6 +2,7 @@
 
 sudo apt install libglfw3 libglfw3-dev libglfw3-doc
 sudo apt install libxi-dev
+sudo apt install libglm-dev
 
 # GLAD
 Generate ZIP file at via http://glad.dav1d.de/ .  Then, unpack it in this directory.
