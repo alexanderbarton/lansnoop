@@ -1,10 +1,10 @@
 CC := g++
 INCLUDES := -I ../events/build -I ../common -I include
 CFLAGS := -g -std=c++17 -Wall -O3 $(INCLUDES)
-LIBS :=
+LIBS := ../common/build/common.a ../events/build/events.a
 BUILD := build
 # LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -ldl
-LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl
+LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lprotobuf
 SRCS := $(wildcard *.cpp)
 OBJS:=$(patsubst %.cpp, build/%.o, $(wildcard *.cpp)) build/glad.o
 
