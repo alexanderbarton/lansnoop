@@ -90,27 +90,37 @@ void FDGSystem::update(Components& components)
 
 #if 1
     //  Compute attraction-to-origin force.
-    //  Attration is porportional to distance squared.
+    //  Attration is porportional to distance.
     //
-    const float kc = 3.0;
+    const float kc = 0.005f;
     for (Node& node : nodes) {
         float d_square = node.px*node.px + node.py*node.py;
-        d_square = std::max(d_square, 1.0f);
-        node.fx -= kc / d_square * node.px;
-        node.fy -= kc / d_square * node.py;
+        // d_square = std::max(d_square, 1.0f);
+        float d = sqrt(d_square);
+        node.fx -= kc * d * node.px;
+        node.fy -= kc * d * node.py;
     }
 #endif
 
-#if 1
+#if 0
     //  Compute a drag force acting against velocity.
     //
-    const float kd = 50.0; //  Drag constant.
+    const float kd = 50.0f; //  Drag constant.
     for (Node& node : nodes) {
         float speed = sqrt(node.vx*node.vx + node.vy*node.vy);
         if (speed > 1.0f) {
             node.fx -= node.vx / speed * kd;
             node.fy -= node.vy / speed * kd;
         }
+    }
+#endif
+
+#if 1
+    //  
+    //
+    for (Node& node : nodes) {
+        node.vx *= 0.99f;
+        node.vy *= 0.99f;
     }
 #endif
 

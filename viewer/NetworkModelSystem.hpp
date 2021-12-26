@@ -18,6 +18,7 @@ public:
 private:
     std::ifstream in;
 
-    //  Maps snooper network IDs to entity IDs.
-    std::unordered_map<int, int> net_to_entity_ids;
+    //  Maps snooper IDs to entity IDs.
+    std::unordered_map<int, int> network_to_entity_ids;
+    std::unordered_map<int, int> interface_to_entity_ids;
 };

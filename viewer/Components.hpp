@@ -1,7 +1,10 @@
 #pragma once
 
 #include <vector>
+#include "DescriptionComponent.hpp"
 #include "LocationComponent.hpp"
+#include "FDGVertexComponent.hpp"
+#include "FDGEdgeComponent.hpp"
 
 
 //  Components are stored in vectors.
@@ -15,5 +18,13 @@
 //      the current end of the vector.
 
 struct Components {
+    std::vector<DescriptionComponent> description_components;
     std::vector<LocationComponent> location_components;
+    std::vector<FDGVertexComponent> fdg_vertex_components;
+    std::vector<FDGEdgeComponent> fdg_edge_components;
+
+
+    //  Write a description of all entities to stdout.
+    //
+    void describe_entities() const;
 };

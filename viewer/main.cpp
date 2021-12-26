@@ -4,6 +4,7 @@
 #include "Components.hpp"
 #include "NetworkModelSystem.hpp"
 #include "DisplaySystem.hpp"
+#include "FDGSystem.hpp"
 
 
 class Viewer {
@@ -15,6 +16,7 @@ private:
     Components components;
     NetworkModelSystem network_model_system;
     DisplaySystem display_system;
+    FDGSystem fdg_system;
 
     void process_input(GLFWwindow* window);
     void init_shaders();
@@ -35,6 +37,7 @@ void Viewer::run(const char* argv0)
     while (!this->display_system.should_close())
     {
         this->network_model_system.update(this->components);
+        this->fdg_system.update(this->components);
         this->display_system.update(this->components);
     }
     std::cerr << "\n";

@@ -1,3 +1,5 @@
+#include <cstdlib>
+
 #include "event.pb.h"
 #include "EventSerialization.hpp"
 #include "Entities.hpp"
@@ -7,6 +9,13 @@
 #include "/home/abarton/debug.hpp"
 
 
+//  Returns a random value between -1.0 and 1.0.
+static float rng()
+{
+    return (rand() - RAND_MAX/2) * 1.0f / (RAND_MAX/2);
+}
+
+
 void NetworkModelSystem::update(Components& components)
 {
     Lansnoop::Event event;
@@ -14,26 +23,34 @@ void NetworkModelSystem::update(Components& components)
         switch (event.type_case()) {
 
             case Lansnoop::Event::kNetwork:
-                if (!net_to_entity_ids.count(event.network().id())) {
-                    LocationComponent component;
-                    component.entity_id = generate_entity_id();
-                    component.x = component.entity_id; //  TODO: randomize initial location
-                    component.y = 0.;                  //  TODO: randomize initial location
-                    component.z = 1.;
-                    components.location_components.push_back(component);
-                    net_to_entity_ids[event.network().id()] = component.entity_id;
+                if (!network_to_entity_ids.count(event.network().id())) {
+                    int entity_id = generate_entity_id();
+                    components.description_components.push_back(DescriptionComponent(entity_id, "network"));
+                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+                    this->network_to_entity_ids[event.network().id()] = entity_id;
                 }
                 break;
 
             case Lansnoop::Event::kInterface:
-                if (!net_to_entity_ids.count(event.interface().id())) {
-                    LocationComponent component;
-                    component.entity_id = generate_entity_id();
-                    component.x = component.entity_id; //  TODO: randomize initial location
-                    component.y = 0.;                  //  TODO: randomize initial location
-                    component.z = 1.;
-                    components.location_components.push_back(component);
-                    net_to_entity_ids[event.interface().id()] = component.entity_id;
+                if (!interface_to_entity_ids.count(event.interface().id())) {
+                    int entity_id = generate_entity_id();
+                    components.description_components.push_back(DescriptionComponent(entity_id, "interface"));
+                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+                    this->interface_to_entity_ids[event.interface().id()] = entity_id;
+
+                    if (!network_to_entity_ids.count(event.interface().network_id())) {
+                        marks("oops"); // We should already have a mapping for this network.
+                    } else {
+                        int edge_entity_id = generate_entity_id();
+                        int network_entity_id = network_to_entity_ids[event.interface().network_id()];
+                        components.description_components.push_back(DescriptionComponent(edge_entity_id, "edge"));
+                        components.fdg_edge_components.push_back(FDGEdgeComponent(edge_entity_id, entity_id, network_entity_id));
+                    }
+                }
+                else {
+                    //  Check for changes to the assignment of this interface to a different network.
                 }
                 break;
 
@@ -42,6 +59,8 @@ void NetworkModelSystem::update(Components& components)
                 break;
         }
     }
+
+    // components.describe_entities();
 }
 
 
