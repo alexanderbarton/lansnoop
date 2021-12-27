@@ -30,11 +30,16 @@ private:
     unsigned int modelLoc;
     unsigned int viewLoc;
     unsigned int projectionLoc;
-    unsigned int VBO, VAO, EBO;
+    // unsigned int VBO, VAO, EBO;
+    unsigned int cubeVBO, cubeVAO;
 
     unsigned int lineVAO, lineVBO;
     float line_vertices[6];
 
-    void init_shaders();
+    unsigned int objectShader;
+    unsigned int lineShader;
+
+    void init_object_shaders();
+    void init_line_shaders();
     void drawLine(float ax, float ay, float az, float bx, float by, float bz);
 };
