@@ -9,8 +9,6 @@
 #include "EventSerialization.hpp"
 #include "Snoop.hpp"
 
-#include "/home/abarton/debug.hpp"
-
 
 static pcap_t* global_libpcap = nullptr;
 
@@ -113,24 +111,23 @@ static void capture(pcap_t* libpcap, bool live_capture, Snoop* snoop)
 
 static pcap_t* read_interface(const std::string &nic)
 {
+    int ret;
     char errbuf[PCAP_ERRBUF_SIZE];
     *errbuf = '\0';
+
     pcap_t* libpcap = pcap_create(nic.c_str(), errbuf);
     if (!libpcap || *errbuf)
         throw std::runtime_error(errbuf);
 
     pcap_set_promisc(libpcap, 1);
 
-    int ret;
-#if 0
-    //  pcap timeout seems to default to 1ms.  Leave it as is.
+    //  Set 1 ms timeout.
     ret = pcap_set_timeout(libpcap, 1);
     if (ret) {
         pcap_close(libpcap);
         libpcap = nullptr;
         throw std::runtime_error("pcap_set_timeout() failed");
     }
-#endif
 
     //  32MB packet buffer.
     ret = pcap_set_buffer_size(libpcap, 32 * 1024*1024);
@@ -159,6 +156,18 @@ static pcap_t* read_interface(const std::string &nic)
 }
 
 
+static void usage(const char* argv0, std::ostream& out)
+{
+    out << "Usage: " << argv0 << " [-v] [-i interface] [--oui oui_file] [-r pcap_file]" << std::endl;
+    out << "Writes binary network activity to stdout." << std::endl;
+    out << std::endl;
+    out << "  -i    Read packets from the named interface." << std::endl;
+    out << "  --oui Read OUI information from the names CSV file." << std::endl;
+    out << "  -r    Read packets from the named libpcap savefile." << std::endl;
+    out << "  -v    Be verbose.  Print packet stats to stderr on exit." << std::endl;
+}
+
+
 static pcap_t* read_file(const std::string &path)
 {
     char errbuf[PCAP_ERRBUF_SIZE];
@@ -182,7 +191,10 @@ int main(int argc, char **argv)
         bool verbose = false;
         int i = 1;
         while (i < argc) {
-            if (std::string("-i") == argv[i]) {
+            if (std::string("-?") == argv[i] || std::string("--help") == argv[i]) {
+                ++i;
+                usage(argv[0], std::cout);
+            } else if (std::string("-i") == argv[i]) {
                 ++i;
                 if (i >= argc)
                     throw std::invalid_argument("-i expects an interface name, none given");

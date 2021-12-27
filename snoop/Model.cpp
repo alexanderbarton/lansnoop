@@ -159,8 +159,8 @@ long Model::new_network()
 std::map<Model::MacAddress, Model::Interface>::iterator Model::new_interface(const MacAddress& address, long network_id)
 {
     int oui = (int(address[0]) << 16) | (int(address[1]) << 8) | int(address[2]);
-    show(this->ouis.size());
-    showx(oui);
+    // show(this->ouis.size());
+    // showx(oui);
     auto ouis_i = this->ouis.find(oui);
 
     Interface interface;
