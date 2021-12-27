@@ -132,14 +132,14 @@ void DisplaySystem::init_object_shaders()
         "#version 330 core\n"
         "in vec3 FragPos;\n"
         "in vec3 Normal;\n"
+        "uniform vec3 objectColor;\n"
         "out vec4 FragColor;\n"
         "void main()\n"
         "{\n"
         "   float ambientStrength = 0.6;\n"
         "   float diffuseStrength = 0.4;\n"
         "   vec3 lightPos = vec3(15.0, -15.0, 50.0);\n"
-        "   vec3 lightColor = vec3(1.0, 1.0, 1.0);\n"
-        "   vec3 objectColor = vec3(1.0, 0.5, 0.2);\n"
+        "   vec3 lightColor = vec3(0.75, 0.75, 0.75);\n"
         "   vec3 ambient = ambientStrength * lightColor;\n"
         "   vec3 norm = normalize(Normal);\n"
         "   vec3 lightDir = normalize(lightPos - FragPos);\n"
@@ -203,10 +203,11 @@ void DisplaySystem::init_line_shaders()
 
     const char *fragmentShaderSource =
         "#version 330 core\n"
+        "uniform vec3 lineColor;\n"
         "out vec4 FragColor;\n"
         "void main()\n"
         "{\n"
-        "   FragColor = vec4(1.0, 0.5, 0.2, 1.0);\n"
+        "   FragColor = vec4(lineColor, 1.0);\n"
         "}";
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     if (!fragmentShader)
@@ -443,7 +444,10 @@ void DisplaySystem::update(Components& components)
 {
     process_input(this->window, components);
 
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    // glClearColor(0.1f, 0.15f, 0.15f, 1.0f);
+    glClearColor(0.05f, 0.07f, 0.07f, 1.0f);
+    // glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -464,9 +468,11 @@ void DisplaySystem::update(Components& components)
     this->modelLoc = glGetUniformLocation(this->objectShader, "model");
     this->viewLoc = glGetUniformLocation(this->objectShader, "view");
     this->projectionLoc = glGetUniformLocation(this->objectShader, "projection");
+    unsigned int objectColorLoc = glGetUniformLocation(this->objectShader, "objectColor");
     glUniformMatrix4fv(     this->modelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(      this->viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(this->projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniform3fv(objectColorLoc, 1, glm::value_ptr(glm::vec3(1.0, 0.5, 0.2)));
 
     for (const LocationComponent& c : components.location_components) {
         model = glm::mat4(1.f);
@@ -485,18 +491,33 @@ void DisplaySystem::update(Components& components)
     glUseProgram(this->lineShader);
     this->viewLoc = glGetUniformLocation(this->lineShader, "view");
     this->projectionLoc = glGetUniformLocation(this->lineShader, "projection");
+    unsigned int lineColorLoc = glGetUniformLocation(this->lineShader, "lineColor");
     glUniformMatrix4fv(      this->viewLoc, 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(this->projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+    // glUniform3fv(lineColorLoc, 1, glm::value_ptr(glm::vec3(0.4f, 1.f, 0.4f)));
 
-    for (const FDGEdgeComponent& c : components.fdg_edge_components) {
-        const LocationComponent& a = find(components.location_components, c.vertex_ids[0]);
-        const LocationComponent& b = find(components.location_components, c.vertex_ids[1]);
+    for (InterfaceEdgeComponent& c : components.interface_edge_components) {
+        const LocationComponent& a = find(components.location_components, c.entity_id);
+        const LocationComponent& b = find(components.location_components, c.other_entity_id);
+        float rb = 0.2f;
+        float g = 0.2f;
+        // if (c.glow > 0.1f) {
+            // g += (c.glow-0.1f) / 10;
+            g += c.glow / 5.f;
+            if (g > 1.f) {
+                rb += (g - 1.f) / 10;
+                rb = std::min(rb, 1.f);
+            }
+            g = std::min(g, 1.f);
+        // }
+        c.glow *= 0.8;
+        glUniform3fv(lineColorLoc, 1, glm::value_ptr(glm::vec3(rb, g, rb)));
         drawLine(a.x, a.y, 1.f, b.x, b.y, 1.f);
-        //  TODO: make drawable edges their own component.
     }
 
     //  16x16 XY grid at Z=0.
     //
+    glUniform3fv(lineColorLoc, 1, glm::value_ptr(glm::vec3(0.05f, 0.05f, 0.2f)));
     for (int x=-16; x<=16; ++x)
         drawLine(x, 16.f, 0.f, x, -16.f, 0.f);
     for (int y=-16; y<=16; ++y)

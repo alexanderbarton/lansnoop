@@ -2,11 +2,12 @@
 
 //  This component represents an edge participating in a force directed graph.
 //
-//  An edge exerts an attractive force between a pair FDGVertexComponents.
+//  An edge exerts an attractive force on another entity.
+//  Both entitues should have the Location component.
 //
 struct FDGEdgeComponent {
     int entity_id;     // This entity ID.
-    int vertex_ids[2]; // IDs of a pair of FDGVertexComponents.
+    int other_entity_id;
 
-    FDGEdgeComponent(int id, int node_a_id, int node_b_id) : entity_id(id), vertex_ids { node_a_id, node_b_id } {};
+    FDGEdgeComponent(int entity_id, int other_entity_id) : entity_id(entity_id), other_entity_id(other_entity_id) {};
 };

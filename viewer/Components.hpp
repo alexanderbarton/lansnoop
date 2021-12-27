@@ -5,6 +5,7 @@
 #include "LocationComponent.hpp"
 #include "FDGVertexComponent.hpp"
 #include "FDGEdgeComponent.hpp"
+#include "InterfaceEdgeComponent.hpp"
 
 
 //  Components are stored in vectors.
@@ -22,9 +23,13 @@ struct Components {
     std::vector<LocationComponent> location_components;
     std::vector<FDGVertexComponent> fdg_vertex_components;
     std::vector<FDGEdgeComponent> fdg_edge_components;
+    std::vector<InterfaceEdgeComponent> interface_edge_components;
 
 
     //  Write a description of all entities to stdout.
     //
     void describe_entities() const;
 };
+
+
+InterfaceEdgeComponent& find(long entity_id, std::vector<InterfaceEdgeComponent>& interface_edge_components);

@@ -4,6 +4,7 @@ package Lansnoop;
 
 import "network.proto";
 import "interface.proto";
+import "interface_traffic.proto";
 
 message Event {
     fixed64 timestamp = 1; // Nanoseconds since the epoch.
@@ -11,5 +12,6 @@ message Event {
     oneof type {
         Network network = 3;
         Interface interface = 4;
+        InterfaceTraffic interface_traffic = 5;
     }
 }

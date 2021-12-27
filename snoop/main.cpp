@@ -23,7 +23,7 @@ extern "C" {
 
 static void signal_handler(int sig, siginfo_t*, void*)
 {
-    std::cerr << "Caught signal " << strsignal(sig) << std::endl;
+    std::cerr << "\nCaught " << strsignal(sig) << " signal" << std::endl;
 
     /*  Restore default signal handling.
      */
@@ -86,11 +86,11 @@ static void capture(pcap_t* libpcap, bool live_capture, Snoop* snoop)
 
             //  Notify the packet parser that time has passed.
             //  If libpcap's idle timeout is 1ms, this will happen
-            //  at most every 100ms.
-            if (++idle_count > 100) {
+            //  at most every 10ms.
+            if (++idle_count > 10) {
                 struct timeval now;
                 gettimeofday(&now, NULL);
-                // snoop->parse_packet(now, NULL, 0);
+                snoop->parse_ethernet(now, NULL, 0);
                 idle_count = 0;
             }
         }

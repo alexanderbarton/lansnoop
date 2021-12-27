@@ -20,9 +20,10 @@ public:
         std::array<unsigned char, 6> address;  // MAC address
         long network_id; //  All interfaces belong to exactly one network.
         std::string maker;
+        long packet_count = 0; // Number of Ethernet frames addresses to or from this interface.
     };
 
-    void note_time(long t) { this->now = t; }
+    void note_time(long t);
     void note_packet_count(long c) { this->packet_count = c; }
 
     //  Note one Ethernet packet traversing between two interfaces.
@@ -50,10 +51,16 @@ private:
     //  Maps an interface's MAC address to its Interface instance.
     std::map<MacAddress, Interface> interfaces_by_address;
 
+    //  Set of interface ID's that have had packet traffic since the last traffic update.
+    std::set<MacAddress> recent_interface_traffic;
+    long last_traffic_update = 0;
+
     //  Maps an interface's ID to its address.
     std::map<long, MacAddress> interfaces_by_id;
 
-    std::map<int, std::string> ouis;  //  Map OUIs to organization names.
+    //  Map OUIs to organization names.
+    std::map<int, std::string> ouis;
+
 
     long new_network();
 
@@ -64,6 +71,7 @@ private:
 
     void emit(const Network& network, bool fini = false);
     void emit(const Interface& interface, bool fini = false);
+    void emit_interface_traffic_update();
 };
 
 

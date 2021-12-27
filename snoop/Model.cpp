@@ -9,6 +9,20 @@
 #include "/home/abarton/debug.hpp"
 
 
+void Model::note_time(long t)
+{
+    this->now = t;
+    const long millisecond = 1000000L;
+    if (this->now >= this->last_traffic_update + 10*millisecond) {
+        if (this->recent_interface_traffic.size()) {
+            emit_interface_traffic_update();
+            this->recent_interface_traffic.clear();
+        }
+        this->last_traffic_update = this->now + 10*millisecond;
+    }
+}
+
+
 void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_address,
                                    const std::array<unsigned char, 6>& destination_address)
 {
@@ -23,8 +37,17 @@ void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_ad
         //  In a multicast broadcast, only the source interface is "real".
         //
         if (source_i == this->interfaces_by_address.end()) {
+#if 0
             long network_id = this->new_network();
-            this->new_interface(source_address, network_id);
+#else
+            //  Assume all interfaces are on the same one network.
+            long network_id;
+            if (this->networks.size())
+                network_id = this->networks.begin()->first;
+            else
+                network_id = this->new_network();
+#endif
+            source_i = this->new_interface(source_address, network_id);
         }
     }
     else {
@@ -36,9 +59,18 @@ void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_ad
         }
         //  Both interfaces are new to us.
         else if (source_i == this->interfaces_by_address.end() && destination_i == this->interfaces_by_address.end()) {
-            long network = this->new_network();
-            source_i = this->new_interface(source_address, network);
-            destination_i = this->new_interface(destination_address, network);
+#if 0
+            long network_id = this->new_network();
+#else
+            //  Assume all interfaces are on the same one network.
+            long network_id;
+            if (this->networks.size())
+                network_id = this->networks.begin()->first;
+            else
+                network_id = this->new_network();
+#endif
+            source_i = this->new_interface(source_address, network_id);
+            destination_i = this->new_interface(destination_address, network_id);
         }
         //  Only the source interface is new.
         else if (source_i == this->interfaces_by_address.end()) {
@@ -48,10 +80,17 @@ void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_ad
         else {
             destination_i = this->new_interface(destination_address, source_i->second.network_id);
         }
+    }
 
-        //  Note traffic between interfaces.
-        //
-        //  TODO
+    //  Update packet counters.
+    //
+    if (source_i != this->interfaces_by_address.end()) {
+        this->recent_interface_traffic.insert(source_i->second.address);
+        source_i->second.packet_count++;
+    }
+    if (destination_i != this->interfaces_by_address.end()) {
+        this->recent_interface_traffic.insert(destination_i->second.address);
+        destination_i->second.packet_count++;
     }
 }
 
@@ -207,6 +246,7 @@ void Model::emit(const Network& network, bool fini)
     event.mutable_network()->set_id(network.id);
     event.mutable_network()->set_fini(fini);
     std::cout << event;
+    std::cout << std::flush;
 }
 
 
@@ -221,6 +261,21 @@ void Model::emit(const Interface& interface, bool fini)
     event.mutable_interface()->set_address(std::string(interface.address.begin(), interface.address.end()));
     event.mutable_interface()->set_maker(interface.maker);
     std::cout << event;
+    std::cout << std::flush;
+}
+
+
+void Model::emit_interface_traffic_update()
+{
+    Lansnoop::Event event;
+    event.set_timestamp(this->now);
+    event.set_packet(this->packet_count);
+    for (const MacAddress& mac_address : this->recent_interface_traffic) {
+        const Interface& interface = this->interfaces_by_address.at(mac_address);
+        (*event.mutable_interface_traffic()->mutable_packet_counts())[interface.id] = interface.packet_count;
+    }
+    std::cout << event;
+    std::cout << std::flush;
 }
 
 

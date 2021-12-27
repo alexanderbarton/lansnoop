@@ -36,6 +36,18 @@ static void print(const Lansnoop::Interface& interface)
 }
 
 
+static void print(const Lansnoop::InterfaceTraffic& interface_traffic)
+{
+    std::set<long> keys;
+    for (const auto& e : interface_traffic.packet_counts())
+        keys.insert(e.first);
+
+    std::cout << "    " << "counts:\n";
+    for (long interface_id : keys)
+        std::cout << "                " << interface_id << " => " << interface_traffic.packet_counts().at(interface_id) << "\n";
+}
+
+
 static void print(const Lansnoop::Event& event)
 {
     switch (event.type_case()) {
@@ -44,6 +56,9 @@ static void print(const Lansnoop::Event& event)
             break;
         case Lansnoop::Event::kInterface:
             std::cout << "Interface\n";
+            break;
+        case Lansnoop::Event::kInterfaceTraffic:
+            std::cout << "InterfaceTraffic\n";
             break;
         case Lansnoop::Event::TYPE_NOT_SET:
         default:
@@ -58,6 +73,9 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kInterface:
             print(event.interface());
             break;
+        case Lansnoop::Event::kInterfaceTraffic:
+            print(event.interface_traffic());
+            break;
         case Lansnoop::Event::TYPE_NOT_SET:
         default:
             break;
@@ -71,6 +89,7 @@ static void print(const Lansnoop::Event& event)
     strftime(buffer, sizeof(buffer), "%F %T", &tm);
     std::cout << "    timestamp:  " << buffer << "." << std::setw(3) << std::setfill('0') << milliseconds << "\n";
     std::cout << "    packet:     " << event.packet() << "\n";
+    std::cout << std::flush; //  TODO: nix
 }
 
 

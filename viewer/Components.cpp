@@ -23,7 +23,7 @@ static void describe(const FDGVertexComponent& c)
 
 static void describe(const FDGEdgeComponent& c)
 {
-    std::cout << "    fdg_edge: vertex_ids: { " << c.vertex_ids[0] << ", " << c.vertex_ids[1] << " }" << "\n";
+    std::cout << "    fdg_edge: other_entity_id: " << c.other_entity_id << "\n";
 }
 
 
@@ -59,4 +59,14 @@ void Components::describe_entities() const
         describe(entity_id, this->fdg_edge_components);
     }
     std::cout << std::flush;
+}
+
+
+InterfaceEdgeComponent& find(long entity_id, std::vector<InterfaceEdgeComponent>& components)
+{
+    for (InterfaceEdgeComponent& c : components)
+        if (c.entity_id == entity_id)
+            return c;
+    throw std::runtime_error(std::string("find component: entity not found: ") + std::to_string(entity_id));
+    //  TODO: efficient lookup.
 }

@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <fcntl.h>
 
 #include "event.pb.h"
 #include "EventSerialization.hpp"
@@ -19,7 +20,8 @@ static float rng()
 void NetworkModelSystem::update(Components& components)
 {
     Lansnoop::Event event;
-    while (in >> event) {
+    // while (in >> event) {
+    while (read_event_nb(in, event)) {
         switch (event.type_case()) {
 
             case Lansnoop::Event::kNetwork:
@@ -43,14 +45,26 @@ void NetworkModelSystem::update(Components& components)
                     if (!network_to_entity_ids.count(event.interface().network_id())) {
                         marks("oops"); // We should already have a mapping for this network.
                     } else {
-                        int edge_entity_id = generate_entity_id();
                         int network_entity_id = network_to_entity_ids[event.interface().network_id()];
-                        components.description_components.push_back(DescriptionComponent(edge_entity_id, "edge"));
-                        components.fdg_edge_components.push_back(FDGEdgeComponent(edge_entity_id, entity_id, network_entity_id));
+                        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
+                        components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
                     }
                 }
                 else {
                     //  Check for changes to the assignment of this interface to a different network.
+                }
+                break;
+
+            case Lansnoop::Event::kInterfaceTraffic:
+                for (const auto& e : event.interface_traffic().packet_counts()) {
+                    long dp = e.second - this->interface_packet_counts[e.first];
+                    this->interface_packet_counts[e.first] = e.second;
+                    if (dp) {
+                        long entity_id = this->interface_to_entity_ids.at(e.first);
+                        InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+                        iec.glow += dp;
+                    }
+                    // show(dp);
                 }
                 break;
 
@@ -69,4 +83,5 @@ void NetworkModelSystem::open(const std::string& path)
     this->in.open(path, std::ifstream::binary);
     if (!in.good())
         throw std::invalid_argument("NetworkModelSystem: unable to open input path");
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
 }

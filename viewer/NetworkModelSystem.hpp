@@ -21,4 +21,7 @@ private:
     //  Maps snooper IDs to entity IDs.
     std::unordered_map<int, int> network_to_entity_ids;
     std::unordered_map<int, int> interface_to_entity_ids;
+
+    //  Map snooper interface ID's to packet counts.
+    std::unordered_map<int, long> interface_packet_counts;
 };

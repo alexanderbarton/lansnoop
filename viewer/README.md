@@ -12,6 +12,9 @@ It should produce files:
     include/KHR/khrplatform.h
 Also, `touch include/glad/glad.h include/KHR/khrplatform.h src/glad.c` if unzip creates the files with unreasonable timestamps.
 
+# Running
+
+`$ make && sudo ../snoop/build/snoop -v -i enp6s0 --oui ../oui.csv | build/viewer /dev/stdin`
 
 # References
 GLFW documentation at https://www.glfw.org/documentation.html .

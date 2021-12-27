@@ -68,18 +68,18 @@ void FDGSystem::update(Components& components)
     //  Compute intervertex attraction forces.
     //  Attration is proportional to distance.
     //
-    const float ka = 0.25f;
+    const float ka = 1.f / 16;
     std::unordered_map<int, int> entity_to_node_index;
     entity_to_node_index.reserve(nodes.size());
     for (size_t ix=0; ix<nodes.size(); ++ix)
         entity_to_node_index[nodes[ix].entity_id] = ix;
     for (const FDGEdgeComponent& edge : components.fdg_edge_components) {
-        if (!entity_to_node_index.count(edge.vertex_ids[0]))
-            throw std::runtime_error(std::string("FDGSystem::update(): entity ID ") + std::to_string(edge.vertex_ids[0]) + " not found in entity_to_node_index");
-        if (!entity_to_node_index.count(edge.vertex_ids[1]))
-            throw std::runtime_error(std::string("FDGSystem::update(): entity ID ") + std::to_string(edge.vertex_ids[1]) + " not found in entity_to_node_index");
-        Node& a = nodes[entity_to_node_index[edge.vertex_ids[0]]];
-        Node& b = nodes[entity_to_node_index[edge.vertex_ids[1]]];
+        if (!entity_to_node_index.count(edge.entity_id))
+            throw std::runtime_error(std::string("FDGSystem::update(): entity ID ") + std::to_string(edge.entity_id) + " not found in entity_to_node_index");
+        if (!entity_to_node_index.count(edge.other_entity_id))
+            throw std::runtime_error(std::string("FDGSystem::update(): entity ID ") + std::to_string(edge.other_entity_id) + " not found in entity_to_node_index");
+        Node& a = nodes[entity_to_node_index[edge.entity_id]];
+        Node& b = nodes[entity_to_node_index[edge.other_entity_id]];
         // float d = sqrt((a.px-b.px)*(a.px-b.px)+(a.py-b.py)*(a.py-b.py));
         a.fx += ka * (b.px-a.px);
         a.fy += ka * (b.py-a.py);
@@ -90,7 +90,7 @@ void FDGSystem::update(Components& components)
 
 #if 1
     //  Compute attraction-to-origin force.
-    //  Attration is porportional to distance.
+    //  Attration is proportional to distance.
     //
     const float kc = 0.005f;
     for (Node& node : nodes) {
