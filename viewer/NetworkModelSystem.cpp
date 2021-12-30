@@ -1,4 +1,7 @@
 #include <cstdlib>
+#include <sstream>
+#include <iomanip>
+#include <string>
 #include <fcntl.h>
 
 #include "event.pb.h"
@@ -17,6 +20,39 @@ static float rng()
 }
 
 
+static std::string bytes_to_mac(const std::string& bytes)
+{
+    std::stringstream sstream;
+    sstream << std::hex << std::setw(2) << std::setfill('0');
+    bool first = true;
+    for (char c : bytes) {
+        if (first)
+            first = false;
+        else
+            sstream << ':';
+        sstream << int((unsigned char)c);
+    }
+    std::string result = sstream.str();
+    return result;
+}
+
+
+static std::string bytes_to_ip_address(const std::string& bytes)
+{
+    std::stringstream sstream;
+    bool first = true;
+    for (char c : bytes) {
+        if (first)
+            first = false;
+        else
+            sstream << '.';
+        sstream << int((unsigned char)c);
+    }
+    std::string result = sstream.str();
+    return result;
+}
+
+
 void NetworkModelSystem::update(Components& components)
 {
     Lansnoop::Event event;
@@ -27,8 +63,11 @@ void NetworkModelSystem::update(Components& components)
             case Lansnoop::Event::kNetwork:
                 if (!network_to_entity_ids.count(event.network().id())) {
                     int entity_id = generate_entity_id();
-                    components.description_components.push_back(DescriptionComponent(entity_id, "network"));
+                    std::string description("network ");
+                    description += std::to_string(event.network().id());
+                    components.description_components.push_back(DescriptionComponent(entity_id, description));
                     components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+                    // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
                     components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
                     this->network_to_entity_ids[event.network().id()] = entity_id;
                 }
@@ -37,8 +76,11 @@ void NetworkModelSystem::update(Components& components)
             case Lansnoop::Event::kInterface:
                 if (!interface_to_entity_ids.count(event.interface().id())) {
                     int entity_id = generate_entity_id();
-                    components.description_components.push_back(DescriptionComponent(entity_id, "interface"));
+                    std::string description("interface ");
+                    description += bytes_to_mac(event.interface().address());
+                    components.description_components.push_back(DescriptionComponent(entity_id, description));
                     components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+                    components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
                     components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
                     this->interface_to_entity_ids[event.interface().id()] = entity_id;
 
@@ -64,7 +106,30 @@ void NetworkModelSystem::update(Components& components)
                         InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
                         iec.glow += dp;
                     }
-                    // show(dp);
+                }
+                break;
+
+            case Lansnoop::Event::kIpaddress:
+                if (!ipaddress_to_entity_ids.count(event.ipaddress().id())) {
+                    int entity_id = generate_entity_id();
+                    std::string description("IP address ");
+                    description += bytes_to_ip_address(event.ipaddress().address());
+                    components.description_components.push_back(DescriptionComponent(entity_id, description));
+                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+                    components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
+                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+                    this->ipaddress_to_entity_ids[event.ipaddress().id()] = entity_id;
+
+                    if (event.ipaddress().interface_id()) {
+                        if (!interface_to_entity_ids.count(event.ipaddress().interface_id())) {
+                            marks("oops"); // We should already have a mapping for this interface.
+                        } else {
+                            int interface_entity_id = interface_to_entity_ids[event.ipaddress().interface_id()];
+                            components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, interface_entity_id));
+                            components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, interface_entity_id));
+                        }
+                    }
+                    //  TODO: deal with changing interface_id()'s.
                 }
                 break;
 

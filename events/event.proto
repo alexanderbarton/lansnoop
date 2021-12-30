@@ -5,6 +5,7 @@ package Lansnoop;
 import "network.proto";
 import "interface.proto";
 import "interface_traffic.proto";
+import "ipaddress.proto";
 
 message Event {
     fixed64 timestamp = 1; // Nanoseconds since the epoch.
@@ -13,5 +14,6 @@ message Event {
         Network network = 3;
         Interface interface = 4;
         InterfaceTraffic interface_traffic = 5;
+        IPAddress ipaddress = 6;
     }
 }

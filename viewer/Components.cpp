@@ -5,13 +5,19 @@
 
 static void describe(const DescriptionComponent& c)
 {
-    std::cout << "    description: " << c.description << "\n";
+    std::cout << "    description: \"" << c.description << "\"\n";
 }
 
 
 static void describe(const LocationComponent& c)
 {
     std::cout << "    location: (" << c.x << ", " << c.y << ", " << c.z << ")" << "\n";
+}
+
+
+static void describe(const ShapeComponent& c)
+{
+    std::cout << "    shape: " << c.shape << "\n";
 }
 
 
@@ -46,6 +52,8 @@ void Components::describe_entities() const
         entity_ids.insert(c.entity_id);
     for (const auto& c : this->location_components)
         entity_ids.insert(c.entity_id);
+    for (const auto& c : this->shape_components)
+        entity_ids.insert(c.entity_id);
     for (const auto& c : this->fdg_vertex_components)
         entity_ids.insert(c.entity_id);
     for (const auto& c : this->fdg_edge_components)
@@ -55,6 +63,7 @@ void Components::describe_entities() const
         std::cout << "Entity " << entity_id << "\n";
         describe(entity_id, this->description_components);
         describe(entity_id, this->location_components);
+        describe(entity_id, this->shape_components);
         describe(entity_id, this->fdg_vertex_components);
         describe(entity_id, this->fdg_edge_components);
     }

@@ -4,7 +4,7 @@ CFLAGS := -g -std=c++17 -Wall -O3 $(INCLUDES)
 LIBS := ../common/build/common.a ../events/build/events.a
 BUILD := build
 # LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -ldl
-LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lprotobuf
+LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lprotobuf -lm
 SRCS := $(wildcard *.cpp)
 OBJS:=$(patsubst %.cpp, build/%.o, $(wildcard *.cpp)) build/glad.o
 

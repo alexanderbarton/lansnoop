@@ -13,6 +13,11 @@ public:
     enum class DISPOSITION {
         TRUNCATED,
         PROCESSED,
+        ERROR,
+        DISINTEREST,
+        ARP,
+        ARP_DISINTEREST,
+        ARP_ERROR,
         _MAX,
     };
 
@@ -31,6 +36,7 @@ private:
     Model model;
 
     DISPOSITION _parse_ethernet(const unsigned char* frame, unsigned frame_length);
+    DISPOSITION parse_arp(const unsigned char* frame, unsigned frame_length);
 };
 
 

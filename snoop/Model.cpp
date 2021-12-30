@@ -23,8 +23,8 @@ void Model::note_time(long t)
 }
 
 
-void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_address,
-                                   const std::array<unsigned char, 6>& destination_address)
+void Model::note_l2_packet_traffic(const MacAddress& source_address,
+                                   const MacAddress& destination_address)
 {
     auto source_i = this->interfaces_by_address.find(source_address);
     auto destination_i = this->interfaces_by_address.find(destination_address);
@@ -95,6 +95,28 @@ void Model::note_l2_packet_traffic(const std::array<unsigned char, 6>& source_ad
 }
 
 
+//  Assign an IP address to an interface.
+//
+void Model::note_arp(const MacAddress& mac_address, const IPV4Address& ip_address)
+{
+    auto interface_i = this->interfaces_by_address.find(mac_address);
+    if (interface_i == this->interfaces_by_address.end())
+        return;  // We *should* find this.
+    const Interface& interface = interface_i->second;
+
+    auto ip_address_i = this->ip_addresses.find(ip_address);
+    if (ip_address_i == this->ip_addresses.end()) {
+        //  Create a new IPAddressInfo instance.
+        this->new_ip_address(ip_address, interface.id);
+    }
+    else {
+        //  Update an existing IPAdressInfo to assig nit to a (new) interface.
+        ip_address_i->second.interface_id = interface.id;
+        emit(ip_address_i->second);
+    }
+}
+
+
 void Model::report(std::ostream& o) const
 {
     for (const auto& entry : this->networks) {
@@ -108,6 +130,15 @@ void Model::report(std::ostream& o) const
             o << "        network ID: " << interface.network_id << "\n";
             o << "        maker:      " << interface.maker << "\n";
         }
+    }
+    for (const auto& entry : this->ip_addresses) {
+        const IPAddressInfo& ip_address = entry.second;
+        o << "IPAddressInfo " << ip_address.id << "\n";
+        o << "    address:      " << ip_address.address << "\n";
+        if (ip_address.interface_id)
+            o << "    interface_id: " << ip_address.interface_id << "\n";
+        else
+            o << "    interface_id: " << "(none)" << "\n";
     }
 }
 
@@ -218,6 +249,23 @@ std::map<Model::MacAddress, Model::Interface>::iterator Model::new_interface(con
 }
 
 
+Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, long interface_id)
+{
+    if (address.size() != 4 && address.size() != 16)
+        throw std::invalid_argument("new_ip_address(): bad address length");
+    if (this->ip_addresses.count(address))
+        throw std::invalid_argument("new_ip_address(): address already exists");
+    IPAddressInfo& ip_address_info = this->ip_addresses[address];;
+    ip_address_info.id = this->next_id++;
+    ip_address_info.address = address;
+    ip_address_info.interface_id = interface_id;  // Initially not assigned to any interface.
+
+    emit(ip_address_info);
+
+    return ip_address_info;
+}
+
+
 //  Reassign all interfaces connected on network B to network A.
 //  Delete network B.
 void Model::merge_networks(long a_id, long b_id)
@@ -265,6 +313,20 @@ void Model::emit(const Interface& interface, bool fini)
 }
 
 
+void Model::emit(const IPAddressInfo& ipaddress, bool fini)
+{
+    Lansnoop::Event event;
+    event.set_timestamp(this->now);
+    event.set_packet(this->packet_count);
+    event.mutable_ipaddress()->set_id(ipaddress.id);
+    event.mutable_ipaddress()->set_fini(fini);
+    event.mutable_ipaddress()->set_address(std::string(ipaddress.address.begin(), ipaddress.address.end()));
+    event.mutable_ipaddress()->set_interface_id(ipaddress.interface_id);
+    std::cout << event;
+    std::cout << std::flush;
+}
+
+
 void Model::emit_interface_traffic_update()
 {
     Lansnoop::Event event;
@@ -279,7 +341,7 @@ void Model::emit_interface_traffic_update()
 }
 
 
-std::ostream& operator<<(std::ostream& o, Model::MacAddress address)
+std::ostream& operator<<(std::ostream& o, const Model::MacAddress& address)
 {
     bool first = true;
     for (unsigned char c : address) {
@@ -288,6 +350,20 @@ std::ostream& operator<<(std::ostream& o, Model::MacAddress address)
         else
             o << ":";
         o << std::hex << std::setw(2) << std::setfill('0') << int(c) << std::dec;
+    }
+    return o;
+}
+
+
+std::ostream& operator<<(std::ostream& o, const Model::IPV4Address& address)
+{
+    bool first = true;
+    for (unsigned char c : address) {
+        if (first)
+            first = false;
+        else
+            o << ".";
+        o << int(c);
     }
     return o;
 }

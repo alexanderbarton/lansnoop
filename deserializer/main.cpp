@@ -36,6 +36,24 @@ static void print(const Lansnoop::Interface& interface)
 }
 
 
+static void print(const Lansnoop::IPAddress& ip_address)
+{
+    std::cout << "    " << "id:         " << ip_address.id() << "\n";
+    std::cout << "    " << "fini:       " << (ip_address.fini()?"true":"false") << "\n";
+    std::cout << "    " << "address:    ";
+    bool first = true;
+    for (unsigned char c : ip_address.address()) {
+        if (first)
+            first = false;
+        else
+            std::cout << ".";
+        std::cout << int(c);
+    }
+    //  TODO: format for IPv6 when needed.
+    std::cout << "\n";
+}
+
+
 static void print(const Lansnoop::InterfaceTraffic& interface_traffic)
 {
     std::set<long> keys;
@@ -60,6 +78,9 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kInterfaceTraffic:
             std::cout << "InterfaceTraffic\n";
             break;
+        case Lansnoop::Event::kIpaddress:
+            std::cout << "IPAddress\n";
+            break;
         case Lansnoop::Event::TYPE_NOT_SET:
         default:
             std::cout << "[bad event]\n";
@@ -75,6 +96,9 @@ static void print(const Lansnoop::Event& event)
             break;
         case Lansnoop::Event::kInterfaceTraffic:
             print(event.interface_traffic());
+            break;
+        case Lansnoop::Event::kIpaddress:
+            print(event.ipaddress());
             break;
         case Lansnoop::Event::TYPE_NOT_SET:
         default:
