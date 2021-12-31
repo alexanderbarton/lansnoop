@@ -4,7 +4,6 @@
 #include <string>
 #include <fcntl.h>
 
-#include "event.pb.h"
 #include "EventSerialization.hpp"
 #include "Entities.hpp"
 
@@ -53,84 +52,167 @@ static std::string bytes_to_ip_address(const std::string& bytes)
 }
 
 
+void NetworkModelSystem::receive(Components& components, const Lansnoop::Network& network)
+{
+    if (!network_to_entity_ids.count(network.id())) {
+        int entity_id = generate_entity_id();
+        std::string description("network ");
+        description += std::to_string(network.id());
+        components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
+        components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+        this->network_to_entity_ids[network.id()] = entity_id;
+    }
+}
+
+
+void NetworkModelSystem::receive(Components& components, const Lansnoop::Interface& interface)
+{
+    if (!interface_to_entity_ids.count(interface.id())) {
+        int entity_id = generate_entity_id();
+        std::string description("interface ");
+        description += bytes_to_mac(interface.address());
+        components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
+        components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+        this->interface_to_entity_ids[interface.id()] = entity_id;
+
+        if (!network_to_entity_ids.count(interface.network_id())) {
+            marks("oops"); // We should already have a mapping for this network.
+        } else {
+            int network_entity_id = network_to_entity_ids[interface.network_id()];
+            components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
+            components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
+        }
+    }
+    else {
+        //  Check for changes to the assignment of this interface to a different network.
+    }
+}
+
+
+void NetworkModelSystem::receive(Components& components, const Lansnoop::InterfaceTraffic& traffic)
+{
+    for (const auto& e : traffic.packet_counts()) {
+        long dp = e.second - this->interface_packet_counts[e.first];
+        this->interface_packet_counts[e.first] = e.second;
+        if (dp) {
+            long entity_id = this->interface_to_entity_ids.at(e.first);
+            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            iec.glow += dp;
+        }
+    }
+}
+
+
+void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddress& ipaddress)
+{
+    if (!ipaddress_to_entity_ids.count(ipaddress.id())) {
+        int attached_entity_id;
+        switch (ipaddress.attached_to_case()) {
+            case Lansnoop::IPAddress::kInterfaceId: {
+                auto it = this->interface_to_entity_ids.find(ipaddress.interface_id());
+                if (it == this->interface_to_entity_ids.end())
+                    throw std::invalid_argument("receive(IPAddress): attached interface not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::IPAddress::kCloudId: {
+                auto it = this->cloud_to_entity_ids.find(ipaddress.cloud_id());
+                if (it == this->cloud_to_entity_ids.end())
+                    throw std::invalid_argument("receive(IPAddress): attached cloud not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::IPAddress::ATTACHED_TO_NOT_SET:
+            default:
+                throw std::invalid_argument(std::string("receive(IPAddress ")
+                        + std::to_string(ipaddress.id())
+                        + "): invalid attached_to");
+        }
+
+        int entity_id = generate_entity_id();
+        std::string description("IP address ");
+        description += bytes_to_ip_address(ipaddress.address());
+        components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
+        components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));
+        components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, attached_entity_id));
+        this->ipaddress_to_entity_ids[ipaddress.id()] = entity_id;
+        //  TODO: deal with changing interface_id()'s.
+    }
+}
+
+
+void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& cloud)
+{
+    if (!cloud_to_entity_ids.count(cloud.id())) {
+        int attached_entity_id;
+        switch (cloud.attached_to_case()) {
+            case Lansnoop::Cloud::kInterfaceId: {
+                auto it = this->interface_to_entity_ids.find(cloud.interface_id());
+                if (it == this->interface_to_entity_ids.end())
+                    throw std::invalid_argument("receive(Cloud): attached interface not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::Cloud::kCloudId: {
+                auto it = this->cloud_to_entity_ids.find(cloud.cloud_id());
+                if (it == this->cloud_to_entity_ids.end())
+                    throw std::invalid_argument("receive(Cloud): attached cloud not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::Cloud::ATTACHED_TO_NOT_SET:
+            default:
+                throw std::invalid_argument(std::string("receive(Cloud ")
+                        + std::to_string(cloud.id())
+                        + "): invalid attached_to");
+        }
+
+        int entity_id = generate_entity_id();
+        std::string description("cloud ");
+        description += bytes_to_ip_address(cloud.description());
+        components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
+        components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));
+        components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, attached_entity_id));
+        this->cloud_to_entity_ids[cloud.id()] = entity_id;
+    }
+    //  TODO: handle cloud updates
+}
+
+
 void NetworkModelSystem::update(Components& components)
 {
     Lansnoop::Event event;
-    // while (in >> event) {
     while (read_event_nb(in, event)) {
         switch (event.type_case()) {
 
             case Lansnoop::Event::kNetwork:
-                if (!network_to_entity_ids.count(event.network().id())) {
-                    int entity_id = generate_entity_id();
-                    std::string description("network ");
-                    description += std::to_string(event.network().id());
-                    components.description_components.push_back(DescriptionComponent(entity_id, description));
-                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
-                    // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
-                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
-                    this->network_to_entity_ids[event.network().id()] = entity_id;
-                }
+                receive(components, event.network());
                 break;
 
             case Lansnoop::Event::kInterface:
-                if (!interface_to_entity_ids.count(event.interface().id())) {
-                    int entity_id = generate_entity_id();
-                    std::string description("interface ");
-                    description += bytes_to_mac(event.interface().address());
-                    components.description_components.push_back(DescriptionComponent(entity_id, description));
-                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
-                    components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
-                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
-                    this->interface_to_entity_ids[event.interface().id()] = entity_id;
-
-                    if (!network_to_entity_ids.count(event.interface().network_id())) {
-                        marks("oops"); // We should already have a mapping for this network.
-                    } else {
-                        int network_entity_id = network_to_entity_ids[event.interface().network_id()];
-                        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
-                        components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
-                    }
-                }
-                else {
-                    //  Check for changes to the assignment of this interface to a different network.
-                }
+                receive(components, event.interface());
                 break;
 
             case Lansnoop::Event::kInterfaceTraffic:
-                for (const auto& e : event.interface_traffic().packet_counts()) {
-                    long dp = e.second - this->interface_packet_counts[e.first];
-                    this->interface_packet_counts[e.first] = e.second;
-                    if (dp) {
-                        long entity_id = this->interface_to_entity_ids.at(e.first);
-                        InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
-                        iec.glow += dp;
-                    }
-                }
+                receive(components, event.interface_traffic());
                 break;
 
             case Lansnoop::Event::kIpaddress:
-                if (!ipaddress_to_entity_ids.count(event.ipaddress().id())) {
-                    int entity_id = generate_entity_id();
-                    std::string description("IP address ");
-                    description += bytes_to_ip_address(event.ipaddress().address());
-                    components.description_components.push_back(DescriptionComponent(entity_id, description));
-                    components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
-                    components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
-                    components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
-                    this->ipaddress_to_entity_ids[event.ipaddress().id()] = entity_id;
+                receive(components, event.ipaddress());
+                break;
 
-                    if (event.ipaddress().interface_id()) {
-                        if (!interface_to_entity_ids.count(event.ipaddress().interface_id())) {
-                            marks("oops"); // We should already have a mapping for this interface.
-                        } else {
-                            int interface_entity_id = interface_to_entity_ids[event.ipaddress().interface_id()];
-                            components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, interface_entity_id));
-                            components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, interface_entity_id));
-                        }
-                    }
-                    //  TODO: deal with changing interface_id()'s.
-                }
+            case Lansnoop::Event::kCloud:
+                receive(components, event.cloud());
                 break;
 
             case Lansnoop::Event::TYPE_NOT_SET:

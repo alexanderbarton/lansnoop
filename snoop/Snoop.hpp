@@ -15,9 +15,12 @@ public:
         PROCESSED,
         ERROR,
         DISINTEREST,
+        ETHERTYPE_BAD,
         ARP,
         ARP_DISINTEREST,
         ARP_ERROR,
+        IPv4_FRAGMENT, // Discarded because we don't handle fragments yet.
+        IPv4_BAD,
         _MAX,
     };
 
@@ -37,6 +40,10 @@ private:
 
     DISPOSITION _parse_ethernet(const unsigned char* frame, unsigned frame_length);
     DISPOSITION parse_arp(const unsigned char* frame, unsigned frame_length);
+    DISPOSITION parse_ipv4(const Model::MacAddress& eth_src_addr,
+                           const Model::MacAddress& eth_dst_addr,
+                           const unsigned char* packet,
+                           unsigned packet_length);
 };
 
 

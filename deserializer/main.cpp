@@ -48,9 +48,36 @@ static void print(const Lansnoop::IPAddress& ip_address)
         else
             std::cout << ".";
         std::cout << int(c);
-    }
-    //  TODO: format for IPv6 when needed.
+    } //  TODO: format for IPv6 when needed.
     std::cout << "\n";
+    switch (ip_address.attached_to_case()) {
+        case Lansnoop::IPAddress::kInterfaceId:
+            std::cout << "    " << "attached to: interface " << ip_address.interface_id() << "\n";
+            break;
+        case Lansnoop::IPAddress::kCloudId:
+            std::cout << "    " << "attached to: cloud " << ip_address.cloud_id() << "\n";
+            break;
+        case Lansnoop::IPAddress::ATTACHED_TO_NOT_SET:
+            break;
+    }
+}
+
+
+static void print(const Lansnoop::Cloud& cloud)
+{
+    std::cout << "    " << "id:          " << cloud.id() << "\n";
+    std::cout << "    " << "fini:        " << (cloud.fini()?"true":"false") << "\n";
+    std::cout << "    " << "description: " << cloud.description() << "\n";
+    switch (cloud.attached_to_case()) {
+        case Lansnoop::Cloud::kInterfaceId:
+            std::cout << "    " << "attached to: interface " << cloud.interface_id() << "\n";
+            break;
+        case Lansnoop::Cloud::kCloudId:
+            std::cout << "    " << "attached to: cloud " << cloud.cloud_id() << "\n";
+            break;
+        case Lansnoop::Cloud::ATTACHED_TO_NOT_SET:
+            break;
+    }
 }
 
 
@@ -81,8 +108,11 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kIpaddress:
             std::cout << "IPAddress\n";
             break;
+        case Lansnoop::Event::kCloud:
+            std::cout << "Cloud\n";
+            break;
         case Lansnoop::Event::TYPE_NOT_SET:
-        default:
+        // default:
             std::cout << "[bad event]\n";
             break;
     }
@@ -100,8 +130,11 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kIpaddress:
             print(event.ipaddress());
             break;
+        case Lansnoop::Event::kCloud:
+            print(event.cloud());
+            break;
         case Lansnoop::Event::TYPE_NOT_SET:
-        default:
+        // default:
             break;
     }
 

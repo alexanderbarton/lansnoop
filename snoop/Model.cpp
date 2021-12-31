@@ -95,6 +95,31 @@ void Model::note_l2_packet_traffic(const MacAddress& source_address,
 }
 
 
+void Model::note_ip_through_interface(const IPV4Address& ip, const MacAddress& mac)
+{
+    if (mac[0] & 0x01)
+        return;  // Multicast address.
+
+    if (this->ip_addresses.count(ip)) {
+        //  TODO: check that this IP address is still in the right place?
+    }
+    else {
+        //  Create a new IPAddr instance and assign it to the interface's attached Cloud.
+        auto interface_it = this->interfaces_by_address.find(mac);
+        if (interface_it == this->interfaces_by_address.end())
+            throw std::invalid_argument("note_ip_through_interface(): mac address not found");
+        const Interface& interface = interface_it->second;
+
+        if (!this->cloud_ids_by_interface_addresses.count(mac))
+            this->new_cloud(interface);
+        long cloud_id = this->cloud_ids_by_interface_addresses.at(mac);
+        const Cloud& cloud = this->clouds.at(cloud_id);
+
+        this->new_ip_address(ip, cloud);
+    }
+}
+
+
 //  Assign an IP address to an interface.
 //
 void Model::note_arp(const MacAddress& mac_address, const IPV4Address& ip_address)
@@ -110,8 +135,9 @@ void Model::note_arp(const MacAddress& mac_address, const IPV4Address& ip_addres
         this->new_ip_address(ip_address, interface.id);
     }
     else {
-        //  Update an existing IPAdressInfo to assig nit to a (new) interface.
+        //  Update an existing IPAdressInfo to assign it to a (new) interface.
         ip_address_i->second.interface_id = interface.id;
+        ip_address_i->second.cloud_id = 0;
         emit(ip_address_i->second);
     }
 }
@@ -139,6 +165,16 @@ void Model::report(std::ostream& o) const
             o << "    interface_id: " << ip_address.interface_id << "\n";
         else
             o << "    interface_id: " << "(none)" << "\n";
+        if (ip_address.cloud_id)
+            o << "    cloud_id:     " << ip_address.cloud_id << "\n";
+        else
+            o << "    cloud_id:     " << "(none)" << "\n";
+    }
+    for (const auto& [id, cloud] : this->clouds) {
+        o << "Cloud: " << id << "\n";
+        o << "    description:  " << cloud.description << "\n";
+        o << "    interface_id: " << cloud.interface_id << "\n";
+        o << "    cloud_id:     " << cloud.cloud_id << "\n";
     }
 }
 
@@ -251,8 +287,6 @@ std::map<Model::MacAddress, Model::Interface>::iterator Model::new_interface(con
 
 Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, long interface_id)
 {
-    if (address.size() != 4 && address.size() != 16)
-        throw std::invalid_argument("new_ip_address(): bad address length");
     if (this->ip_addresses.count(address))
         throw std::invalid_argument("new_ip_address(): address already exists");
     IPAddressInfo& ip_address_info = this->ip_addresses[address];;
@@ -263,6 +297,41 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, long int
     emit(ip_address_info);
 
     return ip_address_info;
+}
+
+
+Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, const Cloud& cloud)
+{
+    if (this->ip_addresses.count(address))
+        throw std::invalid_argument("new_ip_address(): address already exists");
+    IPAddressInfo& ip_address_info = this->ip_addresses[address];;
+    ip_address_info.id = this->next_id++;
+    ip_address_info.address = address;
+    ip_address_info.interface_id = 0;
+    ip_address_info.cloud_id = cloud.id;
+
+    emit(ip_address_info);
+
+    return ip_address_info;
+}
+
+
+
+//  Make a new cloud attached to an interface.
+//
+Model::Cloud& Model::new_cloud(const Interface& interface)
+{
+    long id = this->next_id++;
+    Cloud& cloud = this->clouds[id];
+    this->cloud_ids_by_interface_addresses[interface.address] = id;
+    cloud.id = id;
+    cloud.description = "interface-attached"; //  TODO:
+    cloud.interface_id = interface.id;
+    cloud.cloud_id = 0;
+
+    emit(cloud);
+
+    return cloud;
 }
 
 
@@ -321,7 +390,10 @@ void Model::emit(const IPAddressInfo& ipaddress, bool fini)
     event.mutable_ipaddress()->set_id(ipaddress.id);
     event.mutable_ipaddress()->set_fini(fini);
     event.mutable_ipaddress()->set_address(std::string(ipaddress.address.begin(), ipaddress.address.end()));
-    event.mutable_ipaddress()->set_interface_id(ipaddress.interface_id);
+    if (ipaddress.interface_id)
+        event.mutable_ipaddress()->set_interface_id(ipaddress.interface_id);
+    else
+        event.mutable_ipaddress()->set_cloud_id(ipaddress.cloud_id);
     std::cout << event;
     std::cout << std::flush;
 }
@@ -341,9 +413,27 @@ void Model::emit_interface_traffic_update()
 }
 
 
+void Model::emit(const Cloud& cloud, bool fini)
+{
+    Lansnoop::Event event;
+    event.set_timestamp(this->now);
+    event.set_packet(this->packet_count);
+    event.mutable_cloud()->set_id(cloud.id);
+    event.mutable_cloud()->set_fini(fini);
+    event.mutable_cloud()->set_description(cloud.description);
+    if (cloud.interface_id)
+        event.mutable_cloud()->set_interface_id(cloud.interface_id);
+    else
+        event.mutable_cloud()->set_cloud_id(cloud.cloud_id);
+    std::cout << event;
+    std::cout << std::flush;
+}
+
+
 std::ostream& operator<<(std::ostream& o, const Model::MacAddress& address)
 {
     bool first = true;
+    char prev_fill = o.fill('x');
     for (unsigned char c : address) {
         if (first)
             first = false;
@@ -351,6 +441,7 @@ std::ostream& operator<<(std::ostream& o, const Model::MacAddress& address)
             o << ":";
         o << std::hex << std::setw(2) << std::setfill('0') << int(c) << std::dec;
     }
+    o << std::setfill(prev_fill);
     return o;
 }
 

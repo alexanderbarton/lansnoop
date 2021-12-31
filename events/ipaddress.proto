@@ -6,5 +6,8 @@ message IPAddress {
     uint32 id = 1;  // Immutable.
     bool fini = 2;
     bytes address = 3; // 4 or 16 byte address.  Network byte order.
-    uint32 interface_id = 4; //  The interface this address is attached to, iff not 0.
+    oneof attached_to {
+        uint32 interface_id = 4; //  The interface this address is attached to.
+        uint32 cloud_id = 5;
+    };
 }

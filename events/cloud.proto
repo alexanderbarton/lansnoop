@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package Lansnoop;
+
+//  A Cloud is a container of IPAddresses and child Clouds.
+//  A cloud is attached to either a network Interface or to
+//  a parent Cloud.
+// 
+message Cloud {
+    uint32 id = 1;  // Immutable.
+    bool fini = 2;
+    oneof attached_to {
+        uint32 interface_id = 3; // Immutable.
+        uint32 cloud_id = 4;     // Immutable.
+    };
+    string description = 5;
+}

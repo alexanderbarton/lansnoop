@@ -6,6 +6,7 @@
 
 #include <net/ethernet.h>
 #include <net/if_arp.h>
+#include <netinet/ip.h>
 #include <arpa/inet.h>
 
 #include "/home/abarton/debug.hpp"
@@ -54,8 +55,12 @@ Snoop::DISPOSITION Snoop::_parse_ethernet(const unsigned char* frame, unsigned f
     unsigned payload_length = frame_length - sizeof(ether_header);
 
     switch (ntohs(header->ether_type)) {
+        case 0x0800: // IPv4
+            return parse_ipv4(source, destination, payload, payload_length);
         case 0x0806: // ARP
             return parse_arp(payload, payload_length);
+        default:
+            return DISPOSITION::ETHERTYPE_BAD;
     }
 
     return DISPOSITION::DISINTEREST;
@@ -115,7 +120,69 @@ Snoop::DISPOSITION Snoop::parse_arp(const unsigned char* frame, unsigned frame_l
     std::copy(args->target_ip_address, args->target_ip_address+4, ipaddr.begin());
     this->model.note_arp(mac, ipaddr);
 
-    return DISPOSITION::ARP; // Not implemented.
+    return DISPOSITION::ARP;
+}
+
+
+Snoop::DISPOSITION Snoop::parse_ipv4(
+        const Model::MacAddress& eth_src_addr,
+        const Model::MacAddress& eth_dst_addr,
+        const unsigned char* packet,
+        unsigned packet_length)
+{
+    if (packet_length < sizeof(struct ip))
+        return DISPOSITION::TRUNCATED;
+
+    const struct ip* header = reinterpret_cast<const struct ip*>(packet);
+
+    uint16_t frag_off = ntohs(header->ip_off) & IP_OFFMASK;
+    unsigned more_fragments = (ntohs(header->ip_off) & IP_MF) == IP_MF;
+    if (frag_off || more_fragments)
+        return DISPOSITION::IPv4_FRAGMENT;
+    //  TODO: handle fragments
+
+    if (4 != header->ip_v)
+        return DISPOSITION::IPv4_BAD;
+
+    //  total_length is IP header + IP payload.  It may be less than
+    //  this frame's length due to padding.  It may be more than
+    //  this frame's length due to truncation.
+    //
+    uint16_t total_length = ntohs(header->ip_len);
+    uint16_t adjusted_length = packet_length;
+    if (total_length < adjusted_length)
+        adjusted_length = total_length;
+    else if (total_length > adjusted_length)
+        return DISPOSITION::TRUNCATED;
+
+    Model::IPV4Address ip_src_addr;
+    const unsigned char* s_addr = reinterpret_cast<const unsigned char*>(&header->ip_src.s_addr);
+    std::copy(s_addr, s_addr+4, ip_src_addr.begin());
+    this->model.note_ip_through_interface(ip_src_addr, eth_src_addr);
+
+    Model::IPV4Address ip_dst_addr;
+    s_addr = reinterpret_cast<const unsigned char*>(&header->ip_dst.s_addr);
+    std::copy(s_addr, s_addr+4, ip_dst_addr.begin());
+    this->model.note_ip_through_interface(ip_dst_addr, eth_dst_addr);
+
+#if 0
+    unsigned int header_length = 4 * header->ip_hl;
+    switch (header->ip_p) {
+        case IPPROTO_TCP:
+            parse_tcp(packet + header_length, adjusted_length - header_length);
+            break;
+
+        case IPPROTO_UDP:
+            parse_udp(packet + header_length, adjusted_length - header_length);
+            break;
+
+        default:
+            return DISPOSITION::IPv4_PROTOCOL;
+            break;
+    }
+#endif
+
+    return DISPOSITION::PROCESSED;
 }
 
 
@@ -141,9 +208,12 @@ std::ostream& operator<<(std::ostream& o, Snoop::DISPOSITION d)
         case Snoop::DISPOSITION::PROCESSED:       return o << "PROCESSED";
         case Snoop::DISPOSITION::ERROR:           return o << "ERROR";
         case Snoop::DISPOSITION::DISINTEREST:     return o << "DISINTEREST";
+        case Snoop::DISPOSITION::ETHERTYPE_BAD:   return o << "ETHERTYPE_BAD";
         case Snoop::DISPOSITION::ARP:             return o << "ARP";
         case Snoop::DISPOSITION::ARP_DISINTEREST: return o << "ARP_DISINTEREST";
         case Snoop::DISPOSITION::ARP_ERROR:       return o << "ARP_ERROR";
+        case Snoop::DISPOSITION::IPv4_FRAGMENT:   return o << "IPv4_FRAGMENT";
+        case Snoop::DISPOSITION::IPv4_BAD:        return o << "IPv4_BAD";
         case Snoop::DISPOSITION::_MAX:            return o << "_MAX";
         default: return o << "(invalid)";
     };

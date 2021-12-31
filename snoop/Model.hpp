@@ -29,6 +29,14 @@ public:
         long id;
         IPV4Address address;
         long interface_id;  //  Iff not 0, this IP address is attached to this interface.
+        long cloud_id;      //  Iff not 0, this IP address is attached to this cloud.
+    };
+
+    struct Cloud {
+        long id;
+        std::string description;
+        long interface_id;  //  Iff not 0, this IP cloud is attached to this interface.
+        long cloud_id;      //  Iff not 0, this IP cloud is attached to this cloud.
     };
 
     void note_time(long t);
@@ -37,6 +45,9 @@ public:
     //  Note one Ethernet packet traversing between two interfaces.
     void note_l2_packet_traffic(const MacAddress& source_address,
                                 const MacAddress& destination_address);
+
+    //  Note an IP address being routed through an ethernet interface.
+    void note_ip_through_interface(const IPV4Address& ip, const MacAddress& mac);
 
     void note_arp(const MacAddress& mac_address, const IPV4Address& ip_address);
 
@@ -72,6 +83,12 @@ private:
     //  Maps IP addresses to an IPAddressInfos.
     std::map<IPV4Address, IPAddressInfo> ip_addresses;
 
+    //  Maps a cloud's ID to its cloud.
+    std::map<long, Cloud> clouds;
+
+    //  Maps Interface addresses to Cloud IDs of clouds attached to the interface.
+    std::map<MacAddress, long> cloud_ids_by_interface_addresses;
+
     //  Map OUIs to organization names.
     std::map<int, std::string> ouis;
 
@@ -80,6 +97,8 @@ private:
 
     std::map<MacAddress, Interface>::iterator new_interface(const MacAddress& address, long network_id);
     IPAddressInfo& new_ip_address(const IPV4Address& address, long interface_id);
+    IPAddressInfo& new_ip_address(const IPV4Address& address, const Cloud& cloud);
+    Cloud& new_cloud(const Interface&);
 
     //  Merge two networks.
     void merge_networks(long a_id, long b_id);
@@ -88,6 +107,7 @@ private:
     void emit(const Interface&, bool fini = false);
     void emit(const IPAddressInfo&, bool fini = false);
     void emit_interface_traffic_update();
+    void emit(const Cloud&, bool fini = false);
 };
 
 
