@@ -5,6 +5,7 @@
 #include "NetworkModelSystem.hpp"
 #include "DisplaySystem.hpp"
 #include "FDGSystem.hpp"
+#include "KeyboardSystem.hpp"
 
 
 class Viewer {
@@ -17,9 +18,7 @@ private:
     NetworkModelSystem network_model_system;
     DisplaySystem display_system;
     FDGSystem fdg_system;
-
-    void process_input(GLFWwindow* window);
-    void init_shaders();
+    KeyboardSystem keyboard_system;
 };
 
 
@@ -33,11 +32,13 @@ void Viewer::open(const std::string& path)
 void Viewer::run(const char* argv0)
 {
     this->display_system.init();
+    this->keyboard_system.init(display_system.get_window());
 
     while (!this->display_system.should_close())
     {
         this->network_model_system.update(this->components);
         this->fdg_system.update(this->components);
+        this->keyboard_system.update(this->components, this->fdg_system);
         this->display_system.update(this->components);
     }
     std::cerr << "\n";

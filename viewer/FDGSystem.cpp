@@ -52,15 +52,14 @@ void FDGSystem::update(Components& components)
     //  Compute intervertex repulsion forces.
     //  Repulsion is inversely porportional to distance squared.
     //
-    const float kr = 3.0f;
     for (Node& a : nodes)
         for (Node& b : nodes)
             if (a.entity_id != b.entity_id) {
                 float d_square = (a.px-b.px)*(a.px-b.px)+(a.py-b.py)*(a.py-b.py);
                 d_square = std::max(d_square, 0.125f);
                 float d = sqrt(d_square);
-                a.fx -= kr / d_square * (b.px-a.px) / d;
-                a.fy -= kr / d_square * (b.py-a.py) / d;
+                a.fx -= this->k_repulsion / d_square * (b.px-a.px) / d;
+                a.fy -= this->k_repulsion / d_square * (b.py-a.py) / d;
             }
 #endif
 
@@ -68,7 +67,6 @@ void FDGSystem::update(Components& components)
     //  Compute intervertex attraction forces.
     //  Attration is proportional to distance.
     //
-    const float ka = 1.f / 16;
     std::unordered_map<int, int> entity_to_node_index;
     entity_to_node_index.reserve(nodes.size());
     for (size_t ix=0; ix<nodes.size(); ++ix)
@@ -81,10 +79,10 @@ void FDGSystem::update(Components& components)
         Node& a = nodes[entity_to_node_index[edge.entity_id]];
         Node& b = nodes[entity_to_node_index[edge.other_entity_id]];
         // float d = sqrt((a.px-b.px)*(a.px-b.px)+(a.py-b.py)*(a.py-b.py));
-        a.fx += ka * (b.px-a.px);
-        a.fy += ka * (b.py-a.py);
-        b.fx += ka * (a.px-b.px);
-        b.fy += ka * (a.py-b.py);
+        a.fx += this->k_link_attraction * (b.px-a.px);
+        a.fy += this->k_link_attraction * (b.py-a.py);
+        b.fx += this->k_link_attraction * (a.px-b.px);
+        b.fy += this->k_link_attraction * (a.py-b.py);
     }
 #endif
 
@@ -92,13 +90,12 @@ void FDGSystem::update(Components& components)
     //  Compute attraction-to-origin force.
     //  Attration is proportional to distance.
     //
-    const float kc = 0.005f;
     for (Node& node : nodes) {
         float d_square = node.px*node.px + node.py*node.py;
         // d_square = std::max(d_square, 1.0f);
         float d = sqrt(d_square);
-        node.fx -= kc * d * node.px;
-        node.fy -= kc * d * node.py;
+        node.fx -= this->k_origin * d * node.px;
+        node.fy -= this->k_origin * d * node.py;
     }
 #endif
 
@@ -119,17 +116,16 @@ void FDGSystem::update(Components& components)
     //  
     //
     for (Node& node : nodes) {
-        node.vx *= 0.99f;
-        node.vy *= 0.99f;
+        node.vx *= this->k_inverse_drag;
+        node.vy *= this->k_inverse_drag;
     }
 #endif
 
     //  Apply forces to vertices and update positions.
     //
-    const float ki = 1.0; // Node inertia.
     for (Node& node : nodes) {
-        float new_vx = node.vx + dt * node.fx / ki;
-        float new_vy = node.vy + dt * node.fy / ki;
+        float new_vx = node.vx + dt * node.fx / this->k_vertex_inertia;
+        float new_vy = node.vy + dt * node.fy / this->k_vertex_inertia;
         node.px += (new_vx + node.vx) / 2.0f * dt;
         node.py += (new_vy + node.vy) / 2.0f * dt;
         node.vx = new_vx;

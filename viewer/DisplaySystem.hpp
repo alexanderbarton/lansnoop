@@ -17,6 +17,7 @@ public:
     void init();
     void update(Components& components);
     bool should_close();
+    GLFWwindow* get_window() { return window; };
 
 private:
     std::string name = "Lansnoop Viewer";

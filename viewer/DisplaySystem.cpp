@@ -107,24 +107,6 @@ static void check_gl_error(const std::string& context)
 }
 
 
-static void process_input(GLFWwindow* window, Components& components)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    else if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        components.describe_entities();
-    else if (glfwGetKey(window, GLFW_KEY_T) == GLFW_PRESS) {
-
-        for (const auto& [location, description] : Components::Join(components.location_components, components.description_components)) {
-            std::cout << location.entity_id << " " << description.entity_id << " " << description.description << "\n";
-            description.description += " X";
-        }
-    }
-}
-
-
 void DisplaySystem::init_object_shaders()
 {
     char infoLog[512];
@@ -550,8 +532,6 @@ void DisplaySystem::drawLine(float ax, float ay, float az, float bx, float by, f
 
 void DisplaySystem::update(Components& components)
 {
-    process_input(this->window, components);
-
     glClearColor(0.05f, 0.07f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
