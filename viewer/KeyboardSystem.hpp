@@ -5,19 +5,20 @@
 #include "Components.hpp"
 
 class FDGSystem;
+class DisplaySystem;
 
 
 class KeyboardSystem {
 public:
     void init(GLFWwindow* window);
-    void update(Components& components, FDGSystem& fdg);
+    void update(Components& components, FDGSystem& fdg, DisplaySystem& display);
 
     void character_callback(unsigned int codepoint);
 
 private:
     enum class Parameter {
         FDG_REPULSION,
-        FDG_ATTRACTION,
+        FDG_EDGE_ATTRACTION,
         FDG_ORIGIN,
         FDG_DRAG,
         FDG_INERTIA,

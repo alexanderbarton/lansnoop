@@ -38,7 +38,7 @@ void Viewer::run(const char* argv0)
     {
         this->network_model_system.update(this->components);
         this->fdg_system.update(this->components);
-        this->keyboard_system.update(this->components, this->fdg_system);
+        this->keyboard_system.update(this->components, this->fdg_system, this->display_system);
         this->display_system.update(this->components);
     }
     std::cerr << "\n";

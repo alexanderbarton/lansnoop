@@ -489,11 +489,6 @@ void DisplaySystem::init()
     glBindVertexArray(0);
     glLineWidth(1.f);
 
-    //  Set up camera.
-    //
-    // this->lookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-    // this->lookFrom = glm::vec3(0.0f, -16.0f, 16.0f);
-
     glEnable(GL_DEPTH_TEST);
 
     this->objectShaderModelLoc = glGetUniformLocation(this->objectShader, "model");
@@ -505,12 +500,7 @@ void DisplaySystem::init()
     this->lineShaderProjectionLoc = glGetUniformLocation(this->lineShader, "projection");
     this->lineShaderLineColorLoc = glGetUniformLocation(this->lineShader, "lineColor");
 
-    this->lookAt = glm::vec3(0.0f, 0.0f, 0.0f);
-    this->lookFrom = glm::vec3(0.0f, 32*-0.707f, 32*0.707f);
-    this->view = glm::lookAt(this->lookAt + this->lookFrom, this->lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
-    this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 100.0f);
-    this->view_inverse = inverse(this->view);
-    this->projection_inverse = inverse(this->projection);
+    this->set_camera(glm::vec3(0.0f, 0.0f, 0.0f), 32.f);
 }
 
 
@@ -635,4 +625,19 @@ void DisplaySystem::update(Components& components)
         display_fps();
 
     ++this->frames;
+}
+
+
+void DisplaySystem::set_camera(const glm::vec3& focus, float distance)
+{
+    this->cameraFocus = focus;
+    this->cameraDistance = distance;
+    glm::vec3 lookFrom = normalize(glm::vec3(0.0f, -0.707f, 0.707f)) * this->cameraDistance;
+    this->view = glm::lookAt(this->cameraFocus + lookFrom, this->cameraFocus, glm::vec3(0.0f, 1.0f, 0.0f));
+    this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 100.0f);
+    this->view_inverse = inverse(this->view);
+    this->projection_inverse = inverse(this->projection);
+
+    this->cameraFront = -normalize(glm::vec3(lookFrom.x, lookFrom.y, 0.f));
+    this->cameraRight = cross(this->cameraFront, glm::vec3(0.f, 0.f, 1.f));
 }
