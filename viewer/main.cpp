@@ -6,6 +6,7 @@
 #include "DisplaySystem.hpp"
 #include "FDGSystem.hpp"
 #include "KeyboardSystem.hpp"
+#include "MouseSystem.hpp"
 
 
 class Viewer {
@@ -19,6 +20,7 @@ private:
     DisplaySystem display_system;
     FDGSystem fdg_system;
     KeyboardSystem keyboard_system;
+    MouseSystem mouse_system;
 };
 
 
@@ -32,13 +34,17 @@ void Viewer::open(const std::string& path)
 void Viewer::run(const char* argv0)
 {
     this->display_system.init();
+    this->network_model_system.init();
+    this->fdg_system.init();
     this->keyboard_system.init(display_system.get_window());
+    this->mouse_system.init(display_system.get_window());
 
     while (!this->display_system.should_close())
     {
         this->network_model_system.update(this->components);
         this->fdg_system.update(this->components);
         this->keyboard_system.update(this->components, this->fdg_system, this->display_system);
+        this->mouse_system.update(this->components, this->display_system);
         this->display_system.update(this->components);
     }
     std::cerr << "\n";

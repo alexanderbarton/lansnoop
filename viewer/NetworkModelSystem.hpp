@@ -12,6 +12,7 @@
 //
 class NetworkModelSystem : public System {
 public:
+    void init() {};
     void update(Components& components);
 
     void open(const std::string& path);
