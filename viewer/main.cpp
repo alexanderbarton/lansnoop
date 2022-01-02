@@ -45,7 +45,7 @@ void Viewer::run(const char* argv0)
         this->fdg_system.update(this->components);
         this->keyboard_system.update(this->components, this->fdg_system, this->display_system);
         this->mouse_system.update(this->components, this->display_system);
-        this->display_system.update(this->components);
+        this->display_system.update(this->components, this->mouse_system);
     }
     std::cerr << "\n";
 }

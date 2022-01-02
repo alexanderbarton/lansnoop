@@ -9,6 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "DisplaySystem.hpp"
+#include "MouseSystem.hpp"
 
 #include "/home/abarton/debug.hpp"
 
@@ -520,7 +521,7 @@ void DisplaySystem::drawLine(float ax, float ay, float az, float bx, float by, f
 }
 
 
-void DisplaySystem::update(Components& components)
+void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
 {
     glClearColor(0.05f, 0.07f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -538,14 +539,15 @@ void DisplaySystem::update(Components& components)
         model = glm::mat4(1.f);
         model = glm::translate(model, glm::vec3(location.x, location.y, location.z));
         glUniformMatrix4fv(this->objectShaderModelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        float brightness = shape.entity_id == mouse_system.get_hover_id() ? 1.5f : 1.0f;
         switch (shape.shape) {
             case ShapeComponent::Shape::BOX:
-                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(1.0, 0.5, 0.2)));
+                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(1.0, 0.5, 0.2) * brightness));
                 glBindVertexArray(this->cubeVAO);
                 glDrawArrays(GL_TRIANGLES, 0, this->cubeVAOLength);
                 break;
             case ShapeComponent::Shape::CYLINDER:
-                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(0.5, 0.2, 1.0)));
+                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(0.5, 0.2, 1.0) * brightness));
                 glBindVertexArray(this->cylinderVAO);
                 glDrawArrays(GL_TRIANGLES, 0, this->cylinderVAOLength);
                 break;
@@ -602,10 +604,15 @@ void DisplaySystem::update(Components& components)
             rb = std::min(rb, 1.f);
         }
         g = std::min(g, 1.f);
-        edge.glow *= 0.8; // Exponential decay.
+        if (edge.glow >= 1.f)
+            glLineWidth(3.f);
+        else
+            glLineWidth(1.f);
         glUniform3fv(this->lineShaderLineColorLoc, 1, glm::value_ptr(glm::vec3(rb, g, rb)));
         drawLine(location.x, location.y, 1.f, other.x, other.y, 1.f);
+        edge.glow *= 0.8; // Exponential decay.
     }
+    glLineWidth(1.f);
 
     //  16x16 XY grid at Z=0.
     //
@@ -614,6 +621,13 @@ void DisplaySystem::update(Components& components)
         drawLine(x, 16.f, 0.f, x, -16.f, 0.f);
     for (int y=-16; y<=16; ++y)
         drawLine(16.f, y, 0.f, -16.f, y, 0.f);
+
+    //  Mark the origin.
+    //
+    glLineWidth(3.f);
+    drawLine(0.5f, 0.f, 0.f, -0.5f, 0.f, 0.f);
+    drawLine(0.f, 0.5f, 0.f, 0.f, -0.5f, 0.f);
+    glLineWidth(3.f);
 #endif
 
     // glBindVertexArray(0); // no need to unbind it every time
@@ -632,12 +646,13 @@ void DisplaySystem::set_camera(const glm::vec3& focus, float distance)
 {
     this->cameraFocus = focus;
     this->cameraDistance = distance;
-    glm::vec3 lookFrom = normalize(glm::vec3(0.0f, -0.707f, 0.707f)) * this->cameraDistance;
-    this->view = glm::lookAt(this->cameraFocus + lookFrom, this->cameraFocus, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::vec3 lookDir = normalize(glm::vec3(0.0f, -0.707f, 0.707f));
+    this->lookFrom = this->cameraFocus + lookDir * this->cameraDistance;
+    this->view = glm::lookAt(this->lookFrom, this->cameraFocus, glm::vec3(0.0f, 1.0f, 0.0f));
     this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 3.f * this->cameraDistance);
     this->view_inverse = inverse(this->view);
     this->projection_inverse = inverse(this->projection);
 
-    this->cameraFront = -normalize(glm::vec3(lookFrom.x, lookFrom.y, 0.f));
+    this->cameraFront = -normalize(glm::vec3(lookDir.x, lookDir.y, 0.f));
     this->cameraRight = cross(this->cameraFront, glm::vec3(0.f, 0.f, 1.f));
 }
