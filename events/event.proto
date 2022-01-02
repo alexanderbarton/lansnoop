@@ -4,7 +4,7 @@ package Lansnoop;
 
 import "network.proto";
 import "interface.proto";
-import "interface_traffic.proto";
+import "traffic.proto";
 import "ipaddress.proto";
 import "cloud.proto";
 
@@ -14,7 +14,7 @@ message Event {
     oneof type {
         Network network = 3;
         Interface interface = 4;
-        InterfaceTraffic interface_traffic = 5;
+        Traffic traffic = 5;
         IPAddress ipaddress = 6;
         Cloud cloud = 7;
     }

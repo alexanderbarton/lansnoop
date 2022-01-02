@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Lansnoop;
+
+message Traffic {
+
+    //  Maps object ID's to current packet counts,
+    //  but only for objects which have seen traffic since the
+    //  previous Traffic message.
+    map<uint32, uint64> interface_packet_counts = 1;
+    map<uint32, uint64> cloud_packet_counts = 2;
+    map<uint32, uint64> ipaddress_packet_counts = 3;
+}

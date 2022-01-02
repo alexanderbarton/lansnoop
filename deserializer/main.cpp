@@ -81,15 +81,27 @@ static void print(const Lansnoop::Cloud& cloud)
 }
 
 
-static void print(const Lansnoop::InterfaceTraffic& interface_traffic)
+static void print(const Lansnoop::Traffic& traffic)
 {
-    std::set<long> keys;
-    for (const auto& e : interface_traffic.packet_counts())
-        keys.insert(e.first);
+    std::set<long> interface_keys;
+    for (const auto& e : traffic.interface_packet_counts())
+        interface_keys.insert(e.first);
+    std::set<long> cloud_keys;
+    for (const auto& e : traffic.cloud_packet_counts())
+        cloud_keys.insert(e.first);
+    std::set<long> ipaddress_keys;
+    for (const auto& e : traffic.ipaddress_packet_counts())
+        ipaddress_keys.insert(e.first);
 
-    std::cout << "    " << "counts:\n";
-    for (long interface_id : keys)
-        std::cout << "                " << interface_id << " => " << interface_traffic.packet_counts().at(interface_id) << "\n";
+    std::cout << "    " << "interface counts:\n";
+    for (long id : interface_keys)
+        std::cout << "                " << id << " => " << traffic.interface_packet_counts().at(id) << "\n";
+    std::cout << "    " << "cloud counts:\n";
+    for (long id : cloud_keys)
+        std::cout << "                " << id << " => " << traffic.cloud_packet_counts().at(id) << "\n";
+    std::cout << "    " << "ipaddress counts:\n";
+    for (long id : ipaddress_keys)
+        std::cout << "                " << id << " => " << traffic.ipaddress_packet_counts().at(id) << "\n";
 }
 
 
@@ -102,8 +114,8 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kInterface:
             std::cout << "Interface\n";
             break;
-        case Lansnoop::Event::kInterfaceTraffic:
-            std::cout << "InterfaceTraffic\n";
+        case Lansnoop::Event::kTraffic:
+            std::cout << "Traffic\n";
             break;
         case Lansnoop::Event::kIpaddress:
             std::cout << "IPAddress\n";
@@ -124,8 +136,8 @@ static void print(const Lansnoop::Event& event)
         case Lansnoop::Event::kInterface:
             print(event.interface());
             break;
-        case Lansnoop::Event::kInterfaceTraffic:
-            print(event.interface_traffic());
+        case Lansnoop::Event::kTraffic:
+            print(event.traffic());
             break;
         case Lansnoop::Event::kIpaddress:
             print(event.ipaddress());

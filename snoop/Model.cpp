@@ -15,8 +15,10 @@ void Model::note_time(long t)
     const long millisecond = 1000000L;
     if (this->now >= this->last_traffic_update + 10*millisecond) {
         if (this->recent_interface_traffic.size()) {
-            emit_interface_traffic_update();
+            emit_traffic_update();
             this->recent_interface_traffic.clear();
+            this->recent_cloud_traffic.clear();
+            this->recent_ipaddress_traffic.clear();
         }
         this->last_traffic_update = this->now + 10*millisecond;
     }
@@ -100,8 +102,12 @@ void Model::note_ip_through_interface(const IPV4Address& ip, const MacAddress& m
     if (mac[0] & 0x01)
         return;  // Multicast address.
 
-    if (this->ip_addresses.count(ip)) {
+    IPAddressInfo* ipaddressinfo;
+    auto ip_it = ip_addresses.find(ip);
+    if (ip_it != this->ip_addresses.end()) {
+        //  We already know about this IP address.
         //  TODO: check that this IP address is still in the right place?
+        ipaddressinfo = &ip_it->second;
     }
     else {
         //  Create a new IPAddr instance and assign it to the interface's attached Cloud.
@@ -115,7 +121,20 @@ void Model::note_ip_through_interface(const IPV4Address& ip, const MacAddress& m
         long cloud_id = this->cloud_ids_by_interface_addresses.at(mac);
         const Cloud& cloud = this->clouds.at(cloud_id);
 
-        this->new_ip_address(ip, cloud);
+        ipaddressinfo = &this->new_ip_address(ip, cloud);
+    }
+
+    //  Increment packet counts.
+    //
+    ++ipaddressinfo->packet_count;
+    this->recent_ipaddress_traffic.insert(ipaddressinfo->address);
+
+    long cloud_id = ipaddressinfo->cloud_id;
+    while (cloud_id) {
+        Cloud& cloud = this->clouds.at(cloud_id);
+        ++cloud.packet_count;
+        this->recent_cloud_traffic.insert(cloud.id);
+        cloud_id = cloud.cloud_id;
     }
 }
 
@@ -399,15 +418,25 @@ void Model::emit(const IPAddressInfo& ipaddress, bool fini)
 }
 
 
-void Model::emit_interface_traffic_update()
+void Model::emit_traffic_update()
 {
     Lansnoop::Event event;
     event.set_timestamp(this->now);
     event.set_packet(this->packet_count);
+
     for (const MacAddress& mac_address : this->recent_interface_traffic) {
         const Interface& interface = this->interfaces_by_address.at(mac_address);
-        (*event.mutable_interface_traffic()->mutable_packet_counts())[interface.id] = interface.packet_count;
+        (*event.mutable_traffic()->mutable_interface_packet_counts())[interface.id] = interface.packet_count;
     }
+    for (long id : this->recent_cloud_traffic) {
+        const Cloud& cloud = this->clouds.at(id);
+        (*event.mutable_traffic()->mutable_cloud_packet_counts())[id] = cloud.packet_count;
+    }
+    for (const IPV4Address& ip : this->recent_ipaddress_traffic) {
+        const IPAddressInfo& ipaddressinfo = this->ip_addresses.at(ip);
+        (*event.mutable_traffic()->mutable_ipaddress_packet_counts())[ipaddressinfo.id] = ipaddressinfo.packet_count;
+    }
+
     std::cout << event;
     std::cout << std::flush;
 }

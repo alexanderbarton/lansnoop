@@ -93,13 +93,31 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
 }
 
 
-void NetworkModelSystem::receive(Components& components, const Lansnoop::InterfaceTraffic& traffic)
+void NetworkModelSystem::receive(Components& components, const Lansnoop::Traffic& traffic)
 {
-    for (const auto& e : traffic.packet_counts()) {
-        long dp = e.second - this->interface_packet_counts[e.first];
-        this->interface_packet_counts[e.first] = e.second;
+    for (const auto [id, count] : traffic.interface_packet_counts()) {
+        long dp = count - this->interface_packet_counts[id];
+        this->interface_packet_counts[id] = count;
         if (dp) {
-            long entity_id = this->interface_to_entity_ids.at(e.first);
+            long entity_id = this->interface_to_entity_ids.at(id);
+            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            iec.glow += dp;
+        }
+    }
+    for (const auto [id, count] : traffic.cloud_packet_counts()) {
+        long dp = count - this->cloud_packet_counts[id];
+        this->cloud_packet_counts[id] = count;
+        if (dp) {
+            long entity_id = this->cloud_to_entity_ids.at(id);
+            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            iec.glow += dp;
+        }
+    }
+    for (const auto [id, count] : traffic.ipaddress_packet_counts()) {
+        long dp = count - this->ipaddress_packet_counts[id];
+        this->ipaddress_packet_counts[id] = count;
+        if (dp) {
+            long entity_id = this->ipaddress_to_entity_ids.at(id);
             InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
             iec.glow += dp;
         }
@@ -109,6 +127,8 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
 
 void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddress& ipaddress)
 {
+    //  New IPAddrInfo instance.
+    //
     if (!ipaddress_to_entity_ids.count(ipaddress.id())) {
         int attached_entity_id;
         switch (ipaddress.attached_to_case()) {
@@ -143,7 +163,38 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));
         components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, attached_entity_id));
         this->ipaddress_to_entity_ids[ipaddress.id()] = entity_id;
-        //  TODO: deal with changing interface_id()'s.
+    }
+
+    //  Update to an existing IPAddrInfo instance.
+    //
+    else {
+        int entity_id = ipaddress_to_entity_ids.at(ipaddress.id());
+        int attached_entity_id;
+        switch (ipaddress.attached_to_case()) {
+            case Lansnoop::IPAddress::kInterfaceId: {
+                auto it = this->interface_to_entity_ids.find(ipaddress.interface_id());
+                if (it == this->interface_to_entity_ids.end())
+                    throw std::invalid_argument("receive(IPAddress): attached interface not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::IPAddress::kCloudId: {
+                auto it = this->cloud_to_entity_ids.find(ipaddress.cloud_id());
+                if (it == this->cloud_to_entity_ids.end())
+                    throw std::invalid_argument("receive(IPAddress): attached cloud not found");
+                attached_entity_id = it->second;
+                break;
+            }
+            case Lansnoop::IPAddress::ATTACHED_TO_NOT_SET:
+            default:
+                throw std::invalid_argument(std::string("receive(IPAddress ")
+                        + std::to_string(ipaddress.id())
+                        + "): invalid attached_to");
+        }
+        FDGEdgeComponent& fdg_edge = components.get(entity_id, components.fdg_edge_components);
+        fdg_edge.other_entity_id = attached_entity_id;
+        InterfaceEdgeComponent& interface_edge = components.get(entity_id, components.interface_edge_components);
+        interface_edge.other_entity_id = attached_entity_id;
     }
 }
 
@@ -203,8 +254,8 @@ void NetworkModelSystem::update(Components& components)
                 receive(components, event.interface());
                 break;
 
-            case Lansnoop::Event::kInterfaceTraffic:
-                receive(components, event.interface_traffic());
+            case Lansnoop::Event::kTraffic:
+                receive(components, event.traffic());
                 break;
 
             case Lansnoop::Event::kIpaddress:

@@ -26,12 +26,14 @@ private:
     std::unordered_map<int, int> ipaddress_to_entity_ids;
     std::unordered_map<int, int> cloud_to_entity_ids;
 
-    //  Map snooper interface ID's to packet counts.
+    //  Map snooper object ID's to packet counts.
     std::unordered_map<int, long> interface_packet_counts;
+    std::unordered_map<int, long> cloud_packet_counts;
+    std::unordered_map<int, long> ipaddress_packet_counts;
 
     void receive(Components&, const Lansnoop::Network&);
     void receive(Components&, const Lansnoop::Interface&);
-    void receive(Components&, const Lansnoop::InterfaceTraffic&);
+    void receive(Components&, const Lansnoop::Traffic&);
     void receive(Components&, const Lansnoop::IPAddress&);
     void receive(Components&, const Lansnoop::Cloud&);
 };

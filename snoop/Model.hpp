@@ -22,7 +22,7 @@ public:
         MacAddress address;  // MAC address
         long network_id; //  All interfaces belong to exactly one network.
         std::string maker;
-        long packet_count = 0; // Number of Ethernet frames addresses to or from this interface.
+        long packet_count = 0; // Number of Ethernet frames addressed to or from this interface.
     };
 
     struct IPAddressInfo {
@@ -30,6 +30,7 @@ public:
         IPV4Address address;
         long interface_id;  //  Iff not 0, this IP address is attached to this interface.
         long cloud_id;      //  Iff not 0, this IP address is attached to this cloud.
+        long packet_count = 0; // Number of packets addressed to or from this IP address.
     };
 
     struct Cloud {
@@ -37,6 +38,7 @@ public:
         std::string description;
         long interface_id;  //  Iff not 0, this IP cloud is attached to this interface.
         long cloud_id;      //  Iff not 0, this IP cloud is attached to this cloud.
+        long packet_count = 0; // Number of packets addressed to or from IP addresses in this cloud.
     };
 
     void note_time(long t);
@@ -73,8 +75,11 @@ private:
     //  Maps an interface's MAC address to its Interface instance.
     std::map<MacAddress, Interface> interfaces_by_address;
 
-    //  Set of interface ID's that have had packet traffic since the last traffic update.
+    //  Set of objects that have had packet traffic since the last traffic update.
     std::set<MacAddress> recent_interface_traffic;
+    std::set<long> recent_cloud_traffic;
+    std::set<IPV4Address> recent_ipaddress_traffic;
+    //  TODO: maybe make these just maps id->count and save a lookup on emit?
     long last_traffic_update = 0;
 
     //  Maps an interface's ID to its address.
@@ -106,7 +111,7 @@ private:
     void emit(const Network&, bool fini = false);
     void emit(const Interface&, bool fini = false);
     void emit(const IPAddressInfo&, bool fini = false);
-    void emit_interface_traffic_update();
+    void emit_traffic_update();
     void emit(const Cloud&, bool fini = false);
 };
 
