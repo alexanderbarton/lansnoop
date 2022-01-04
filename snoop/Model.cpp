@@ -162,6 +162,21 @@ void Model::note_arp(const MacAddress& mac_address, const IPV4Address& ip_addres
 }
 
 
+void Model::note_name(const IPV4Address& address, const std::string& name, NameType type)
+{
+    this->ipv4_address_names[address].insert(NameEntry { name, type });
+
+    auto it = this->ip_addresses.find(address);
+    if (it != this->ip_addresses.end()) {
+        IPAddressInfo& addrinfo = it->second;
+        if (addrinfo.ns_name != name) {
+            addrinfo.ns_name = name;
+            emit(addrinfo);
+        }
+    }
+}
+
+
 void Model::report(std::ostream& o) const
 {
     for (const auto& entry : this->networks) {
@@ -188,12 +203,20 @@ void Model::report(std::ostream& o) const
             o << "    cloud_id:     " << ip_address.cloud_id << "\n";
         else
             o << "    cloud_id:     " << "(none)" << "\n";
+        o << "    ns_name:      " << ip_address.ns_name << "\n";
     }
     for (const auto& [id, cloud] : this->clouds) {
         o << "Cloud: " << id << "\n";
         o << "    description:  " << cloud.description << "\n";
         o << "    interface_id: " << cloud.interface_id << "\n";
         o << "    cloud_id:     " << cloud.cloud_id << "\n";
+    }
+    o << "\nName Service Name Table\n";
+    for (const auto& [address, nameset] : this->ipv4_address_names) {
+        o << "    " << address << ":";
+        for (const NameEntry& ne : nameset)
+            o << " " << ne.name;
+        o << "\n";
     }
 }
 
@@ -281,7 +304,7 @@ long Model::new_network()
 
 //  Create a new interface.
 //  Assign it to the provided network.
-std::map<Model::MacAddress, Model::Interface>::iterator Model::new_interface(const MacAddress& address, long network_id)
+std::map<MacAddress, Model::Interface>::iterator Model::new_interface(const MacAddress& address, long network_id)
 {
     int oui = (int(address[0]) << 16) | (int(address[1]) << 8) | int(address[2]);
     // show(this->ouis.size());
@@ -328,6 +351,10 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, const Cl
     ip_address_info.address = address;
     ip_address_info.interface_id = 0;
     ip_address_info.cloud_id = cloud.id;
+    
+    auto ns_it = this->ipv4_address_names.find(address);
+    if (ns_it != this->ipv4_address_names.end())
+        ip_address_info.ns_name = ns_it->second.begin()->name;
 
     emit(ip_address_info);
 
@@ -413,6 +440,7 @@ void Model::emit(const IPAddressInfo& ipaddress, bool fini)
         event.mutable_ipaddress()->set_interface_id(ipaddress.interface_id);
     else
         event.mutable_ipaddress()->set_cloud_id(ipaddress.cloud_id);
+    event.mutable_ipaddress()->set_ns_name(ipaddress.ns_name);
     std::cout << event;
     std::cout << std::flush;
 }
@@ -456,34 +484,4 @@ void Model::emit(const Cloud& cloud, bool fini)
         event.mutable_cloud()->set_cloud_id(cloud.cloud_id);
     std::cout << event;
     std::cout << std::flush;
-}
-
-
-std::ostream& operator<<(std::ostream& o, const Model::MacAddress& address)
-{
-    bool first = true;
-    char prev_fill = o.fill('x');
-    for (unsigned char c : address) {
-        if (first)
-            first = false;
-        else
-            o << ":";
-        o << std::hex << std::setw(2) << std::setfill('0') << int(c) << std::dec;
-    }
-    o << std::setfill(prev_fill);
-    return o;
-}
-
-
-std::ostream& operator<<(std::ostream& o, const Model::IPV4Address& address)
-{
-    bool first = true;
-    for (unsigned char c : address) {
-        if (first)
-            first = false;
-        else
-            o << ".";
-        o << int(c);
-    }
-    return o;
 }

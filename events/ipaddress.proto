@@ -10,4 +10,5 @@ message IPAddress {
         uint32 interface_id = 4; //  The interface this address is attached to.
         uint32 cloud_id = 5;
     };
+    string ns_name = 6; // A name service name associated with this addresss, if known.
 }

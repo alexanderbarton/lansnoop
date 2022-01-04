@@ -156,6 +156,11 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
         int entity_id = generate_entity_id();
         std::string description("IP address ");
         description += bytes_to_ip_address(ipaddress.address());
+        if (ipaddress.ns_name().size()) {
+            description += " (";
+            description += ipaddress.ns_name();
+            description += ")";
+        }
         components.description_components.push_back(DescriptionComponent(entity_id, description));
         components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
@@ -195,6 +200,15 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
         fdg_edge.other_entity_id = attached_entity_id;
         InterfaceEdgeComponent& interface_edge = components.get(entity_id, components.interface_edge_components);
         interface_edge.other_entity_id = attached_entity_id;
+
+        DescriptionComponent& d = components.get(entity_id, components.description_components);
+        d.description = "IP address ";
+        d.description += bytes_to_ip_address(ipaddress.address());
+        if (ipaddress.ns_name().size()) {
+            d.description += " (";
+            d.description += ipaddress.ns_name();
+            d.description += ")";
+        }
     }
 }
 

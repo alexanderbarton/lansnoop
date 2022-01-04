@@ -4,29 +4,18 @@
 #include <ostream>
 #include <time.h>
 
+#include "util.hpp"
+#include "Disposition.hpp"
 #include "Model.hpp"
+#include "UDPSession.hpp"
 
 
 class Snoop
 {
 public:
-    enum class DISPOSITION {
-        TRUNCATED,
-        PROCESSED,
-        ERROR,
-        DISINTEREST,
-        ETHERTYPE_BAD,
-        ARP,
-        ARP_DISINTEREST,
-        ARP_ERROR,
-        IPv4_FRAGMENT, // Discarded because we don't handle fragments yet.
-        IPv4_BAD,
-        _MAX,
-    };
-
     struct Stats {
         long observed = 0;
-        long dispositions[int(DISPOSITION::_MAX)] = { 0 };
+        long dispositions[int(Disposition::_MAX)] = { 0 };
     };
 
     Snoop();
@@ -38,14 +27,19 @@ private:
     Stats stats;
     Model model;
 
-    DISPOSITION _parse_ethernet(const unsigned char* frame, unsigned frame_length);
-    DISPOSITION parse_arp(const unsigned char* frame, unsigned frame_length);
-    DISPOSITION parse_ipv4(const Model::MacAddress& eth_src_addr,
-                           const Model::MacAddress& eth_dst_addr,
+    Disposition _parse_ethernet(const unsigned char* frame, unsigned frame_length);
+    Disposition parse_arp(const unsigned char* frame, unsigned frame_length);
+    Disposition parse_ipv4(const MacAddress& eth_src_addr,
+                           const MacAddress& eth_dst_addr,
                            const unsigned char* packet,
                            unsigned packet_length);
+    Disposition parse_udp(const IPV4Address& src,
+                          const IPV4Address& dst,
+                          const unsigned char* packet,
+                          unsigned packet_length);
+
+    std::map<IPV4UDPKey, IPV4UDPSession> ipv4_udp_sessions;
 };
 
 
 std::ostream& operator<<(std::ostream&, const Snoop::Stats&);
-std::ostream& operator<<(std::ostream&, Snoop::DISPOSITION);

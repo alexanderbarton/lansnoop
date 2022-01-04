@@ -3,15 +3,13 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <array>
 #include <ostream>
+
+#include "util.hpp"
 
 
 class Model {
 public:
-    class MacAddress : public std::array<unsigned char, 6> {};  // Network byte order.
-    class IPV4Address : public std::array<unsigned char, 4> {};  // Network byte order.
-
     struct Network {
         long id;
         std::set<long> interfaces;
@@ -31,6 +29,7 @@ public:
         long interface_id;  //  Iff not 0, this IP address is attached to this interface.
         long cloud_id;      //  Iff not 0, this IP address is attached to this cloud.
         long packet_count = 0; // Number of packets addressed to or from this IP address.
+        std::string ns_name; // Name service name assigned to this address.
     };
 
     struct Cloud {
@@ -52,6 +51,12 @@ public:
     void note_ip_through_interface(const IPV4Address& ip, const MacAddress& mac);
 
     void note_arp(const MacAddress& mac_address, const IPV4Address& ip_address);
+
+    enum class NameType {
+        DNS,
+    };
+    //  Note a name assigned to an IP address.
+    void note_name(const IPV4Address& address, const std::string& name, NameType type);
 
     //  Generate a topology report.
     void report(std::ostream&) const;
@@ -97,6 +102,21 @@ private:
     //  Map OUIs to organization names.
     std::map<int, std::string> ouis;
 
+    struct NameEntry {
+        std::string name;
+        NameType type;
+
+        bool operator <(const NameEntry& rhs) const {
+            if (name == rhs.name)
+                return type < rhs.type;
+            return name < rhs.name;
+        }
+        bool operator ==(const NameEntry& rhs) const {
+            return name == rhs.name && type == rhs.type;
+        }
+    };
+    std::map<IPV4Address, std::set<NameEntry>> ipv4_address_names;
+
 
     long new_network();
 
@@ -114,7 +134,3 @@ private:
     void emit_traffic_update();
     void emit(const Cloud&, bool fini = false);
 };
-
-
-std::ostream& operator<<(std::ostream&, const Model::MacAddress&);
-std::ostream& operator<<(std::ostream&, const Model::IPV4Address&);

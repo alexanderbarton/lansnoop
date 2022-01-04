@@ -60,6 +60,7 @@ static void print(const Lansnoop::IPAddress& ip_address)
         case Lansnoop::IPAddress::ATTACHED_TO_NOT_SET:
             break;
     }
+    std::cout << "    " << "ns_name:    " << ip_address.ns_name() << "\n";
 }
 
 
