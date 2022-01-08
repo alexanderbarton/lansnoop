@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "Components.hpp"
 #include "FDGSystem.hpp"
 
 

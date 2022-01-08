@@ -69,13 +69,3 @@ void Components::describe_entities() const
     }
     std::cout << std::flush;
 }
-
-
-InterfaceEdgeComponent& find(long entity_id, std::vector<InterfaceEdgeComponent>& components)
-{
-    for (InterfaceEdgeComponent& c : components)
-        if (c.entity_id == entity_id)
-            return c;
-    throw std::runtime_error(std::string("find component: entity not found: ") + std::to_string(entity_id));
-    //  TODO: efficient lookup.
-}

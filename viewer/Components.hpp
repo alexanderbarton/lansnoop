@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "DescriptionComponent.hpp"
+#include "LabelComponent.hpp"
 #include "ShapeComponent.hpp"
 #include "LocationComponent.hpp"
 #include "FDGVertexComponent.hpp"
@@ -23,6 +24,7 @@
 
 struct Components {
     std::vector<DescriptionComponent> description_components;
+    std::vector<LabelComponent> label_components;
     std::vector<LocationComponent> location_components;
     std::vector<ShapeComponent> shape_components;
     std::vector<FDGVertexComponent> fdg_vertex_components;
@@ -49,6 +51,15 @@ struct Components {
                 + std::to_string(entity_id)
                 + " not found");
         //  TODO: Make this efficient.
+    }
+
+    template<class T>
+    T* find(int entity_id, std::vector<T>& table)
+    {
+        for (auto& c : table)
+            if (c.entity_id == entity_id)
+                return &c;
+        return nullptr;
     }
 
 
@@ -92,6 +103,3 @@ struct Components {
         std::vector<U>& u;
     };
 };
-
-
-InterfaceEdgeComponent& find(long entity_id, std::vector<InterfaceEdgeComponent>& interface_edge_components);

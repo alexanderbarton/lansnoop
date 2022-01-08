@@ -6,6 +6,7 @@
 
 #include "EventSerialization.hpp"
 #include "Entities.hpp"
+#include "Components.hpp"
 
 #include "NetworkModelSystem.hpp"
 
@@ -74,6 +75,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
         std::string description("interface ");
         description += bytes_to_mac(interface.address());
         components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.label_components.push_back(LabelComponent(entity_id, bytes_to_mac(interface.address())));
         components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
@@ -100,7 +102,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Traffic
         this->interface_packet_counts[id] = count;
         if (dp) {
             long entity_id = this->interface_to_entity_ids.at(id);
-            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            InterfaceEdgeComponent& iec = components.get(entity_id, components.interface_edge_components);
             iec.glow += dp;
         }
     }
@@ -109,7 +111,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Traffic
         this->cloud_packet_counts[id] = count;
         if (dp) {
             long entity_id = this->cloud_to_entity_ids.at(id);
-            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            InterfaceEdgeComponent& iec = components.get(entity_id, components.interface_edge_components);
             iec.glow += dp;
         }
     }
@@ -118,7 +120,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Traffic
         this->ipaddress_packet_counts[id] = count;
         if (dp) {
             long entity_id = this->ipaddress_to_entity_ids.at(id);
-            InterfaceEdgeComponent& iec = find(entity_id, components.interface_edge_components);
+            InterfaceEdgeComponent& iec = components.get(entity_id, components.interface_edge_components);
             iec.glow += dp;
         }
     }
@@ -162,6 +164,10 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             description += ")";
         }
         components.description_components.push_back(DescriptionComponent(entity_id, description));
+        if (ipaddress.ns_name().size())
+            components.label_components.push_back(LabelComponent(entity_id, ipaddress.ns_name()));
+        else
+            components.label_components.push_back(LabelComponent(entity_id, bytes_to_ip_address(ipaddress.address())));
         components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
@@ -209,6 +215,11 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             d.description += ipaddress.ns_name();
             d.description += ")";
         }
+        LabelComponent& l = components.get(entity_id, components.label_components);
+        if (ipaddress.ns_name().size())
+            l.label = ipaddress.ns_name();
+        else
+            l.label = bytes_to_ip_address(ipaddress.address());
     }
 }
 

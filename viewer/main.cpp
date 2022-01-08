@@ -7,6 +7,7 @@
 #include "FDGSystem.hpp"
 #include "KeyboardSystem.hpp"
 #include "MouseSystem.hpp"
+#include "LabelSystem.hpp"
 
 
 class Viewer {
@@ -21,6 +22,7 @@ private:
     FDGSystem fdg_system;
     KeyboardSystem keyboard_system;
     MouseSystem mouse_system;
+    LabelSystem label_system;
 };
 
 
@@ -38,6 +40,7 @@ void Viewer::run(const char* argv0)
     this->fdg_system.init();
     this->keyboard_system.init(display_system.get_window());
     this->mouse_system.init(display_system.get_window());
+    this->label_system.init();
 
     while (!this->display_system.should_close())
     {
@@ -46,6 +49,10 @@ void Viewer::run(const char* argv0)
         this->keyboard_system.update(this->components, this->fdg_system, this->display_system);
         this->mouse_system.update(this->components, this->display_system);
         this->display_system.update(this->components, this->mouse_system);
+        this->label_system.update(this->components, this->display_system, this->mouse_system);
+
+        glfwSwapBuffers(this->display_system.get_window());
+        glfwPollEvents();
     }
     std::cerr << "\n";
 }

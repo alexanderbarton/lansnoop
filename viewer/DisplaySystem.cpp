@@ -10,6 +10,7 @@
 
 #include "DisplaySystem.hpp"
 #include "MouseSystem.hpp"
+#include "util.hpp"
 
 #include "/home/abarton/debug.hpp"
 
@@ -20,20 +21,6 @@ DisplaySystem::~DisplaySystem()
     glfwTerminate();
 }
 
-
-
-std::ostream& operator <<(std::ostream& o, const glm::vec3& v)
-{
-    o << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-    return o;
-}
-
-
-std::ostream& operator <<(std::ostream& o, const glm::vec4& v)
-{
-    o << "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")";
-    return o;
-}
 
 
 //  Display FPS to stderr once a second.
@@ -632,8 +619,8 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
 
     // glBindVertexArray(0); // no need to unbind it every time
 
-    glfwSwapBuffers(window);
-    glfwPollEvents();
+    // glfwSwapBuffers(window);
+    // glfwPollEvents();
 
     if (false)
         display_fps();

@@ -1,10 +1,10 @@
 CC := g++
-INCLUDES := -I ../events/build -I ../common -I include
+INCLUDES := -I ../events/build -I ../common -I include -I /usr/include/freetype2
 CFLAGS := -g -std=c++17 -Wall -O3 $(INCLUDES)
 LIBS := ../common/build/common.a ../events/build/events.a
 BUILD := build
 # LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -ldl
-LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lprotobuf -lm
+LFLAGS := -lglfw -lGL -lX11 -lpthread -lXrandr -lXi -ldl -lprotobuf -lm -lfreetype
 SRCS := $(wildcard *.cpp)
 OBJS:=$(patsubst %.cpp, build/%.o, $(wildcard *.cpp)) build/glad.o
 

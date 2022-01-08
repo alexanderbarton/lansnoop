@@ -22,6 +22,8 @@ public:
 
     int get_window_width() const { return window_width; }
     int get_window_height() const { return window_height; }
+    const glm::mat4& get_view() const { return view; }
+    const glm::mat4& get_projection() const { return projection; }
     const glm::mat4& get_view_inverse() const { return view_inverse; }
     const glm::mat4& get_projection_inverse() const { return projection_inverse; }
     const glm::vec3 get_look_from() const { return lookFrom; }

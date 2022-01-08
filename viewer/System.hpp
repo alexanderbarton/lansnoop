@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Components.hpp"
-
+class Components;
 
 class System {
 public:

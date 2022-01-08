@@ -86,8 +86,8 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
                 }
             }
         }
+#if 0
     if (new_hover_id != this->hoverId) {
-        this->hoverId = new_hover_id;
         if (new_hover_id) {
             try {
                 DescriptionComponent& description = components.get(this->hoverId, components.description_components);
@@ -97,6 +97,8 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
             }
         }
     }
+#endif
+    this->hoverId = new_hover_id;
 
     //  Slave dragged entity's location to the mouse.
     //
