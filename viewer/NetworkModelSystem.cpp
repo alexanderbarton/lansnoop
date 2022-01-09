@@ -251,9 +251,8 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& 
         }
 
         int entity_id = generate_entity_id();
-        std::string description("cloud ");
-        description += bytes_to_ip_address(cloud.description());
-        components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.description_components.push_back(DescriptionComponent(entity_id, cloud.description()));
+        components.label_components.push_back(LabelComponent(entity_id, cloud.description()));
         components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
         // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));

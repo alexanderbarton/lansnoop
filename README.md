@@ -12,7 +12,7 @@ Obtain the OUI file:
     wget http://standards-oui.ieee.org/oui/oui.csv
 
 Display live traffic:
-    sudo snoop/build/snoop -v -i enp6s0 --oui oui.csv | build/viewer /dev/stdin
+    sudo snoop/build/snoop -v -i enp6s0 --oui oui.csv --asn ../asndata/data-used-autnums --prefix ../asndata/data-raw-table | build/viewer /dev/stdin
 
 Do it again, but in multiple steps and saving intermediate data files:
     sudo tcpdump -i enp6s0 -w enp6s0.pcap

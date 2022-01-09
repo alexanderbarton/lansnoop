@@ -69,7 +69,8 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
             t = (1.5f - display.get_look_from().z) / ray_wor.z;
             glm::vec3 z15 = display.get_look_from() + ray_wor * t;
 
-            for (const auto& [location, shape] : Components::Join(components.location_components, components.shape_components)) {
+            // for (const auto& [location, shape] : Components::Join(components.location_components, components.shape_components)) {
+            for (const LocationComponent& location : components.location_components) {
                 //  Check for intersection of the ray with the top of the
                 //  box at Z=1.5 or the bottom of the box at Z=0.5.
                 if ((location.x - 0.5f < z05.x

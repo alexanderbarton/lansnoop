@@ -5,7 +5,9 @@
 #include <vector>
 #include <ostream>
 
+#include "IPV4PrefixTable.hpp"
 #include "util.hpp"
+
 
 
 class Model {
@@ -30,13 +32,16 @@ public:
         long cloud_id;      //  Iff not 0, this IP address is attached to this cloud.
         long packet_count = 0; // Number of packets addressed to or from this IP address.
         std::string ns_name; // Name service name assigned to this address.
+        unsigned long asn;  // If known, 0 otherwise.  (ASN 0 is reserved.)
+        std::string as_name; // 
     };
 
     struct Cloud {
         long id;
         std::string description;
         long interface_id;  //  Iff not 0, this IP cloud is attached to this interface.
-        long cloud_id;      //  Iff not 0, this IP cloud is attached to this cloud.
+        long cloud_id;      //  Iff not 0, this IP cloud is attached to this parent cloud.
+        std::set<long> child_cloud_ids; // Clouds inside this cloud.
         long packet_count = 0; // Number of packets addressed to or from IP addresses in this cloud.
     };
 
@@ -63,7 +68,10 @@ public:
 
     //  Load the OUI table from a CSV file.
     //  Obtain from http://standards-oui.ieee.org/oui/oui.csv
-    void load_oui(const std::string& path);
+    void load_oui(const std::string& path, bool verbose = false);
+
+    void load_prefixes(const std::string& path, bool verbose = false);
+    void load_asns(const std::string& path, bool verbose = false);
 
 private:
 
@@ -102,6 +110,13 @@ private:
     //  Map OUIs to organization names.
     std::map<int, std::string> ouis;
 
+    //  Network prefix and ASN table.
+    IPV4PrefixTable prefixes;
+
+    //  //  Maps ASNs to owner names.
+    //  Maps ASNs to owner names.
+    std::map<uint32_t, std::string> asns;
+
     struct NameEntry {
         std::string name;
         NameType type;
@@ -122,8 +137,9 @@ private:
 
     std::map<MacAddress, Interface>::iterator new_interface(const MacAddress& address, long network_id);
     IPAddressInfo& new_ip_address(const IPV4Address& address, long interface_id);
-    IPAddressInfo& new_ip_address(const IPV4Address& address, const Cloud& cloud);
-    Cloud& new_cloud(const Interface&);
+    IPAddressInfo& new_ip_address(const IPV4Address& address, Cloud& cloud);
+    Cloud& new_cloud(const Interface&, const std::string& description = "interface-attached");
+    Cloud& new_cloud(Cloud&, const std::string& description = "cloud-attached");
 
     //  Merge two networks.
     void merge_networks(long a_id, long b_id);

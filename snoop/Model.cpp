@@ -119,7 +119,7 @@ void Model::note_ip_through_interface(const IPV4Address& ip, const MacAddress& m
         if (!this->cloud_ids_by_interface_addresses.count(mac))
             this->new_cloud(interface);
         long cloud_id = this->cloud_ids_by_interface_addresses.at(mac);
-        const Cloud& cloud = this->clouds.at(cloud_id);
+        Cloud& cloud = this->clouds.at(cloud_id);
 
         ipaddressinfo = &this->new_ip_address(ip, cloud);
     }
@@ -204,12 +204,22 @@ void Model::report(std::ostream& o) const
         else
             o << "    cloud_id:     " << "(none)" << "\n";
         o << "    ns_name:      " << ip_address.ns_name << "\n";
+        if (ip_address.asn)
+            o << "    asn:          " << ip_address.asn << "\n";
+        else
+            o << "    asn:          " << "\n";
+        o << "    as_name:      " << ip_address.as_name << "\n";
     }
     for (const auto& [id, cloud] : this->clouds) {
         o << "Cloud: " << id << "\n";
         o << "    description:  " << cloud.description << "\n";
         o << "    interface_id: " << cloud.interface_id << "\n";
         o << "    cloud_id:     " << cloud.cloud_id << "\n";
+        o << "    children:    ";
+        for (long child_id : cloud.child_cloud_ids)
+            o << " " << child_id;
+        o << "\n";
+
     }
     o << "\nName Service Name Table\n";
     for (const auto& [address, nameset] : this->ipv4_address_names) {
@@ -221,13 +231,13 @@ void Model::report(std::ostream& o) const
 }
 
 
-void Model::load_oui(const std::string& path)
+void Model::load_oui(const std::string& path, bool verbose)
 {
     //  This seems to be an ISO-4180 formatted file.
 
     std::ifstream in(path);
     if (!in.good())
-        throw std::invalid_argument("unable to read OUI CSV file");
+        throw std::invalid_argument("unable to open OUI CSV file");
 
     int count = 0;
     char line[1024];
@@ -286,8 +296,46 @@ void Model::load_oui(const std::string& path)
         //  Discard the remaining columns.
 
         this->ouis[oui] = org_name;
-
     }
+    if (verbose)
+        std::cerr << count << " OUIs loaded from " << path << std::endl;
+}
+
+
+void Model::load_prefixes(const std::string& path, bool verbose)
+{
+    this->prefixes.load(path, verbose);
+}
+
+
+void Model::load_asns(const std::string& path, bool verbose)
+{
+    std::ifstream in(path);
+    if (!in.good())
+        throw std::invalid_argument("unable to open ASN file");
+
+    int count = 0;
+    char line[1024];
+    while (in.getline(line, sizeof(line), '\n')) {
+        ++count;
+        char* ptr = line;
+
+        //  Read past leading whitespace.
+        while (*ptr == ' ')
+            ++ptr;
+
+        uint32_t asn = 0;
+        while (*ptr && isdigit(*ptr))
+            asn = asn * 10 + *ptr++ - '0';
+
+        //  Whitespace.
+        while (*ptr == ' ')
+            ++ptr;
+
+        this->asns[asn] = ptr;
+    }
+    if (verbose)
+        std::cerr << count << " ASNs loaded from " << path << std::endl;
 }
 
 
@@ -336,13 +384,21 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, long int
     ip_address_info.address = address;
     ip_address_info.interface_id = interface_id;  // Initially not assigned to any interface.
 
+    const IPV4PrefixTable::Prefix* prefix = this->prefixes.look_up(address);
+    if (prefix) {
+        ip_address_info.asn = prefix->asn;
+        auto it = this->asns.find(ip_address_info.asn);
+        if (it != this->asns.end())
+            ip_address_info.as_name = it->second;
+    }
+
     emit(ip_address_info);
 
     return ip_address_info;
 }
 
 
-Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, const Cloud& cloud)
+Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, Cloud& cloud)
 {
     if (this->ip_addresses.count(address))
         throw std::invalid_argument("new_ip_address(): address already exists");
@@ -352,9 +408,38 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, const Cl
     ip_address_info.interface_id = 0;
     ip_address_info.cloud_id = cloud.id;
     
+    //  Do we have a name server name for this IP address?
     auto ns_it = this->ipv4_address_names.find(address);
     if (ns_it != this->ipv4_address_names.end())
         ip_address_info.ns_name = ns_it->second.begin()->name;
+
+    //  Do we have an ASN for this IP address?
+    const IPV4PrefixTable::Prefix* prefix = this->prefixes.look_up(address);
+    if (prefix) {
+        ip_address_info.asn = prefix->asn;
+        auto it = this->asns.find(ip_address_info.asn);
+        if (it != this->asns.end())
+            ip_address_info.as_name = it->second;
+    }
+
+    //  If this address has a known ASN owner, attach this address
+    //  to a subcloud named after the ASN.
+    //
+    if (ip_address_info.as_name.size()) {
+        //  Find an existing subcloud.
+        for (long child_id : cloud.child_cloud_ids) {
+            Cloud& child_cloud = this->clouds.at(child_id);
+            if (child_cloud.description == ip_address_info.as_name) {
+                ip_address_info.cloud_id = child_cloud.id;
+                break;
+            }
+        }
+        //  Else make a new subcloud.
+        if (ip_address_info.cloud_id == cloud.id) {
+            Cloud& subcloud = new_cloud(cloud, ip_address_info.as_name);
+            ip_address_info.cloud_id = subcloud.id;
+        }
+    }
 
     emit(ip_address_info);
 
@@ -365,15 +450,33 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, const Cl
 
 //  Make a new cloud attached to an interface.
 //
-Model::Cloud& Model::new_cloud(const Interface& interface)
+Model::Cloud& Model::new_cloud(const Interface& interface, const std::string& description)
 {
     long id = this->next_id++;
     Cloud& cloud = this->clouds[id];
     this->cloud_ids_by_interface_addresses[interface.address] = id;
     cloud.id = id;
-    cloud.description = "interface-attached"; //  TODO:
+    cloud.description = description;
     cloud.interface_id = interface.id;
     cloud.cloud_id = 0;
+
+    emit(cloud);
+
+    return cloud;
+}
+
+
+//  Make a new cloud attached to a parent cloud.
+//
+Model::Cloud& Model::new_cloud(Cloud& parent, const std::string& description)
+{
+    long id = this->next_id++;
+    Cloud& cloud = this->clouds[id];
+    cloud.id = id;
+    cloud.description = description;
+    cloud.interface_id = 0;
+    cloud.cloud_id = parent.id;
+    parent.child_cloud_ids.insert(id);
 
     emit(cloud);
 

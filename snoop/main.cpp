@@ -7,6 +7,7 @@
 #include <pcap.h>
 
 #include "EventSerialization.hpp"
+#include "IPV4PrefixTable.hpp"
 #include "Snoop.hpp"
 
 
@@ -158,13 +159,15 @@ static pcap_t* read_interface(const std::string &nic)
 
 static void usage(const char* argv0, std::ostream& out)
 {
-    out << "Usage: " << argv0 << " [-v] [-i interface] [--oui oui_file] [-r pcap_file]" << std::endl;
+    out << "Usage: " << argv0 << " [-v] [-i interface] [--oui oui_file] [--prefix fild] [--asn file] [-r pcap_file]" << std::endl;
     out << "Writes binary network activity to stdout." << std::endl;
     out << std::endl;
-    out << "  -i    Read packets from the named interface." << std::endl;
-    out << "  --oui Read OUI information from the names CSV file." << std::endl;
-    out << "  -r    Read packets from the named libpcap savefile." << std::endl;
-    out << "  -v    Be verbose.  Print packet stats to stderr on exit." << std::endl;
+    out << "  -i          Read packets from the named interface." << std::endl;
+    out << "  --asn       Load ASN table from file." << std::endl;
+    out << "  --oui       Load OUI information from the named CSV file." << std::endl;
+    out << "  --prefix    Load network prefix table named file." << std::endl;
+    out << "  -r          Read packets from the named libpcap savefile." << std::endl;
+    out << "  -v          Be verbose.  Print packet stats to stderr on exit." << std::endl;
 }
 
 
@@ -187,6 +190,8 @@ int main(int argc, char **argv)
         GOOGLE_PROTOBUF_VERIFY_VERSION;
 
         std::string file, iface, oui_path;
+        std::vector<std::string> prefix_paths;
+        std::vector<std::string> asn_paths;
 
         bool verbose = false;
         int i = 1;
@@ -194,6 +199,11 @@ int main(int argc, char **argv)
             if (std::string("-?") == argv[i] || std::string("--help") == argv[i]) {
                 ++i;
                 usage(argv[0], std::cout);
+            } else if (std::string("--asn") == argv[i]) {
+                ++i;
+                if (i >= argc)
+                    throw std::invalid_argument("--asn expects a ASN table file name, none given");
+                asn_paths.push_back(argv[i++]);
             } else if (std::string("-i") == argv[i]) {
                 ++i;
                 if (i >= argc)
@@ -205,6 +215,12 @@ int main(int argc, char **argv)
                 if (i >= argc)
                     throw std::invalid_argument("--oui expects a CSV file name, none given");
                 oui_path = argv[i++];
+            }
+            else if (std::string("--prefix") == argv[i]) {
+                ++i;
+                if (i >= argc)
+                    throw std::invalid_argument("--prefix expects a prefix table file name, none given");
+                prefix_paths.push_back(argv[i++]);
             }
             else if (std::string("-r") == argv[i]) {
                 ++i;
@@ -228,7 +244,13 @@ int main(int argc, char **argv)
 
         Snoop snoop;
         if (oui_path.size())
-            snoop.get_model().load_oui(oui_path);
+            snoop.get_model().load_oui(oui_path, verbose);
+
+        for (const std::string& path : asn_paths)
+            snoop.get_model().load_asns(path, verbose);
+
+        for (const std::string& path : prefix_paths)
+            snoop.get_model().load_prefixes(path, verbose);
 
         pcap_t* libpcap;
         if (file.size())
