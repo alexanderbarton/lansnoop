@@ -13,6 +13,9 @@
 #include "/home/abarton/debug.hpp"
 
 
+constexpr float scatter_factor = 1.5f;
+
+
 //  Returns a random value between -1.0 and 1.0.
 static float rng()
 {
@@ -71,23 +74,22 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Network
 void NetworkModelSystem::receive(Components& components, const Lansnoop::Interface& interface)
 {
     if (!interface_to_entity_ids.count(interface.id())) {
+        int network_entity_id = this->network_to_entity_ids.at(interface.network_id());
+        const LocationComponent& location = components.get(network_entity_id, components.location_components);
+        float x = 2*rng() + scatter_factor * location.x;
+        float y = 2*rng() + scatter_factor * location.y;
+
         int entity_id = generate_entity_id();
         std::string description("interface ");
         description += bytes_to_mac(interface.address());
         components.description_components.push_back(DescriptionComponent(entity_id, description));
         components.label_components.push_back(LabelComponent(entity_id, bytes_to_mac(interface.address())));
-        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
+        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
+        components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
         this->interface_to_entity_ids[interface.id()] = entity_id;
-
-        if (!network_to_entity_ids.count(interface.network_id())) {
-            marks("oops"); // We should already have a mapping for this network.
-        } else {
-            int network_entity_id = network_to_entity_ids[interface.network_id()];
-            components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
-            components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
-        }
     }
     else {
         //  Check for changes to the assignment of this interface to a different network.
@@ -155,6 +157,10 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
                         + "): invalid attached_to");
         }
 
+        const LocationComponent& location = components.get(attached_entity_id, components.location_components);
+        float x = 2*rng() + scatter_factor * location.x;
+        float y = 2*rng() + scatter_factor * location.y;
+
         int entity_id = generate_entity_id();
         std::string description("IP address ");
         description += bytes_to_ip_address(ipaddress.address());
@@ -170,13 +176,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             labels.push_back(ipaddress.ns_name());
         labels.push_back(bytes_to_ip_address(ipaddress.address()));
         components.label_components.push_back(LabelComponent(entity_id, labels));
-#if 0
-        if (ipaddress.ns_name().size())
-            components.label_components.push_back(LabelComponent(entity_id, ipaddress.ns_name()));
-        else
-            components.label_components.push_back(LabelComponent(entity_id, bytes_to_ip_address(ipaddress.address())));
-#endif
-        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));
@@ -258,10 +258,14 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& 
                         + "): invalid attached_to");
         }
 
+        const LocationComponent& location = components.get(attached_entity_id, components.location_components);
+        float x = 2*rng() + scatter_factor * location.x;
+        float y = 2*rng() + scatter_factor * location.y;
+
         int entity_id = generate_entity_id();
         components.description_components.push_back(DescriptionComponent(entity_id, cloud.description()));
         components.label_components.push_back(LabelComponent(entity_id, cloud.description()));
-        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
         // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));

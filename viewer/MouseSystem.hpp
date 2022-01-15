@@ -22,7 +22,7 @@ public:
 
 private:
     GLFWwindow* window;
-    float displacement_y = 0.f;
+    float wheel_displacement_y = 0.f; //  Net wheel displacement since last update.
     int hoverId = 0;
     int dragId = 0;
 };

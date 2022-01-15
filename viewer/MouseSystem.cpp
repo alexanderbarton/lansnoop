@@ -40,10 +40,10 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
     //  Mouse wheel zoom
     //  Six mouse wheel clicks doubles (or halves) our viewing distance.
     //
-    if (this->displacement_y > 0.5f || this->displacement_y < -0.5f) {
+    if (this->wheel_displacement_y > 0.5f || this->wheel_displacement_y < -0.5f) {
         constexpr float sixth = 1.122462f;  //  Sixth root of two.
-        display.set_camera(display.get_camera_focus(), std::pow(sixth, displacement_y) * display.get_camera_distance());
-        this->displacement_y = 0.f;
+        display.set_camera(display.get_camera_focus(), std::pow(sixth, wheel_displacement_y) * display.get_camera_distance());
+        this->wheel_displacement_y = 0.f;
     }
 
     //  Detect mouse hovering over any location component.
@@ -133,7 +133,7 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
 
 void MouseSystem::scroll_callback(double xoffset, double yoffset)
 {
-    this->displacement_y += -yoffset;
+    this->wheel_displacement_y += -yoffset;
 }
 
 

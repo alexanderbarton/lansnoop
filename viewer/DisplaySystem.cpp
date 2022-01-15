@@ -669,10 +669,14 @@ void DisplaySystem::set_camera(const glm::vec3& focus, float distance)
 {
     this->cameraFocus = focus;
     this->cameraDistance = distance;
-    glm::vec3 lookDir = normalize(glm::vec3(0.0f, -0.707f, 0.707f));
-    this->lookFrom = this->cameraFocus + lookDir * this->cameraDistance;
+    // glm::vec3 lookDir = normalize(glm::vec3(0.0f, -0.707f, 0.707f));
+    // this->lookFrom = this->cameraFocus + lookDir * this->cameraDistance;
+    glm::vec3 lookDir = glm::vec3(0.0f, -0.707f * 32, 2.f+distance);
+    this->lookFrom = this->cameraFocus + lookDir;
+
     this->view = glm::lookAt(this->lookFrom, this->cameraFocus, glm::vec3(0.0f, 1.0f, 0.0f));
-    this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 3.f * this->cameraDistance);
+    // this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 3.f * this->cameraDistance);
+    this->projection = glm::perspective(glm::radians(45.0f), 1.f*this->window_width/this->window_height, 0.1f, 600.f);
     this->view_inverse = inverse(this->view);
     this->projection_inverse = inverse(this->projection);
 
