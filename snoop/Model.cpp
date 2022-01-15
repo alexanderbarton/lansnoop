@@ -32,6 +32,9 @@ void Model::note_l2_packet_traffic(const MacAddress& source_address,
     auto destination_i = this->interfaces_by_address.find(destination_address);
     bool is_multicast = destination_address[0] & 0x01;
 
+    //  TODO: Filter out 00:00:00:00:00:00 and ff:ff:ff:ff:ff:ff.
+    //        These aren't "real".
+
     //
     //  Check for topology updates.
     //
@@ -355,8 +358,6 @@ long Model::new_network()
 std::map<MacAddress, Model::Interface>::iterator Model::new_interface(const MacAddress& address, long network_id)
 {
     int oui = (int(address[0]) << 16) | (int(address[1]) << 8) | int(address[2]);
-    // show(this->ouis.size());
-    // showx(oui);
     auto ouis_i = this->ouis.find(oui);
 
     Interface interface;

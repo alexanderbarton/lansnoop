@@ -435,6 +435,7 @@ void DisplaySystem::init()
 
     glViewport(0, 0, this->window_width, window_height);
     glfwSetFramebufferSizeCallback(this->window, framebuffer_size_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
     init_object_shaders();
     init_line_shaders();
@@ -541,6 +542,41 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
         }
     }
 
+
+#if 1
+    //  Draw a cross at the mouse position on the z=0 plane.
+    //
+    double xpos = 0.0, ypos = 0.0;
+    glfwGetCursorPos(window, &xpos, &ypos);
+    check_glfw_error("glfwGetCursorPos()");
+    float x = (2.f * xpos) / this->window_width - 1.f;
+    float y = 1.f - (2.f * ypos) / this->window_height;
+    glm::vec3 ray_nds(x, y, 1.f);
+
+    if (ray_nds.x > -1.f && ray_nds.x < 1.f)
+        if (ray_nds.y > -1.f && ray_nds.y < 1.f) {
+            glm::vec4 ray_clip(ray_nds.x, ray_nds.y, -1.f, 1.f);
+            glm::vec4 ray_eye = this->projection_inverse * ray_clip;
+            ray_eye.z = -1.f;
+            ray_eye.w = 0.f;
+            glm::vec3 ray_wor = this->view_inverse * ray_eye;
+            ray_wor = normalize(ray_wor);
+            // TODO: bail out if ray_wor.z is near 0.0.
+            float t = -this->lookFrom.z / ray_wor.z;
+            glm::vec3 z0 = lookFrom + ray_wor * t;
+
+            glUseProgram(this->lineShader);
+            glUniformMatrix4fv(      this->lineShaderViewLoc, 1, GL_FALSE, glm::value_ptr(this->view));
+            glUniformMatrix4fv(this->lineShaderProjectionLoc, 1, GL_FALSE, glm::value_ptr(this->projection));
+
+            glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f) * 0.5f;
+            glUniform3fv(this->lineShaderLineColorLoc, 1, glm::value_ptr(color));
+            glLineWidth(3.f);
+            drawLine(z0.x-0.5f, z0.y,      z0.z, z0.x+0.5f, z0.y,      z0.z);
+            drawLine(z0.x,      z0.y-0.5f, z0.z, z0.x,      z0.y+0.5f, z0.z);
+            glLineWidth(3.f);
+        }
+#endif
 
 #if 0
     //  Draw a box at the mouse position on the z=0 plane.

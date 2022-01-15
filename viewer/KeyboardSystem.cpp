@@ -51,14 +51,18 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
                 this->current_parameter = Parameter(int(this->current_parameter) + 1);
                 if (int(this->current_parameter) >= int(Parameter::NONE))
                     this->current_parameter = Parameter::FDG_REPULSION;
-                std::cout << "Current Tweakable parameter: " << to_s(this->current_parameter) << std::endl;
+                std::cout << "Current Tweakable parameter: " << to_s(this->current_parameter)
+                    // << " (now " << this->to_s(current_parameter) << ")"
+                    << std::endl;
                 break;
 
             case '<':
                 if (int(this->current_parameter) <= 0)
                     this->current_parameter = Parameter::NONE;
                 this->current_parameter = Parameter(int(this->current_parameter) - 1);
-                std::cout << "Current tweakable parameter: " << to_s(this->current_parameter) << std::endl;
+                std::cout << "Current tweakable parameter: " << to_s(this->current_parameter)
+                    // << " (now " << this->to_s(current_parameter) << ")"
+                    << std::endl;
                 break;
 
             case '+':

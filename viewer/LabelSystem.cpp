@@ -255,11 +255,15 @@ void LabelSystem::render_label(const LabelComponent& label, const LocationCompon
     float y = s.y * display.get_window_height();
 
     glm::vec3 color(0.5, 0.8f, 0.2f);
+    glm::vec3 shadow(0.f, 0.f, 0.f);
     y -= 14.f;
 
     x = floorf(x);
     y = floorf(y);
 
-    render_text(label.label, x, y, 1.0f, color);
-    render_text(label.label, x-1.0f, y-1.0f, 1.0f, glm::vec3(0.f, 0.f, 0.f));
+    for (const std::string& l : label.labels) {
+        render_text(l, x, y, 1.0f, color);
+        render_text(l, x-1.0f, y-1.0f, 1.0f, shadow);
+        y -= 14;
+    }
 }

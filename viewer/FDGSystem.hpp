@@ -12,7 +12,7 @@ public:
     float k_link_attraction = 1.f/8;  // Attraction between linked vertices.
     float k_origin = 0.000625f;       // Attraction to origin.
     float k_inverse_drag = 0.99f;     // Drag reciprocal.
-    float k_vertex_inertia = 1.0;     // Vertex inertia.
+    float k_vertex_inertia = 0.25f;     // Vertex inertia.
 
     void init() {}
     void update(Components& components);

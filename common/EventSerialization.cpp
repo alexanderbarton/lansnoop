@@ -48,11 +48,17 @@ bool read_event_nb(std::istream& stream, Lansnoop::Event& event)
     //  Read the 4-byte message length field.
     //
     uint32_t serialized_length;
-    std::streamsize n = stream.readsome(reinterpret_cast<char*>(&serialized_length), sizeof serialized_length);
+    char* ptr = reinterpret_cast<char*>(&serialized_length);
+    char* end = ptr + sizeof(serialized_length);
+    std::streamsize n = stream.readsome(ptr, end-ptr);
     if (n == 0)
         return false;
-    if (n != sizeof serialized_length)
-        throw std::runtime_error("read_event_nb(): partial message size read");
+    ptr += n;
+    while (ptr < end) {
+        std::streamsize n = stream.readsome(ptr, end-ptr);
+        ptr += n;
+        //  TODO: fix this
+    }
     serialized_length = ntohl(serialized_length);
 
     //  Read the full message.

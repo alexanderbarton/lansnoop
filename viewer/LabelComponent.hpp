@@ -6,7 +6,14 @@
 //
 struct LabelComponent {
     int entity_id;
-    std::string label;
+    std::vector<std::string> labels;
 
-    LabelComponent(int id, const std::string& label) : entity_id(id), label(label) {}
+    LabelComponent(int id) : entity_id(id) {}
+
+    LabelComponent(int id, const std::vector<std::string>& labels) : entity_id(id), labels(labels) {}
+
+    LabelComponent(int id, const std::string& label) : entity_id(id)
+    {
+        labels.push_back(label);
+    }
 };

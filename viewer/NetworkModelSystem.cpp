@@ -23,14 +23,14 @@ static float rng()
 static std::string bytes_to_mac(const std::string& bytes)
 {
     std::stringstream sstream;
-    sstream << std::hex << std::setw(2) << std::setfill('0');
+    sstream << std::hex << std::setfill('0');
     bool first = true;
     for (char c : bytes) {
         if (first)
             first = false;
         else
             sstream << ':';
-        sstream << int((unsigned char)c);
+        sstream << std::setw(2) << int((unsigned char)c);
     }
     std::string result = sstream.str();
     return result;
@@ -164,10 +164,18 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             description += ")";
         }
         components.description_components.push_back(DescriptionComponent(entity_id, description));
+
+        std::vector<std::string> labels;
+        if (ipaddress.ns_name().size())
+            labels.push_back(ipaddress.ns_name());
+        labels.push_back(bytes_to_ip_address(ipaddress.address()));
+        components.label_components.push_back(LabelComponent(entity_id, labels));
+#if 0
         if (ipaddress.ns_name().size())
             components.label_components.push_back(LabelComponent(entity_id, ipaddress.ns_name()));
         else
             components.label_components.push_back(LabelComponent(entity_id, bytes_to_ip_address(ipaddress.address())));
+#endif
         components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
         components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
@@ -216,10 +224,10 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             d.description += ")";
         }
         LabelComponent& l = components.get(entity_id, components.label_components);
+        l.labels.clear();
         if (ipaddress.ns_name().size())
-            l.label = ipaddress.ns_name();
-        else
-            l.label = bytes_to_ip_address(ipaddress.address());
+            l.labels.push_back(ipaddress.ns_name());
+        l.labels.push_back(bytes_to_ip_address(ipaddress.address()));
     }
 }
 
