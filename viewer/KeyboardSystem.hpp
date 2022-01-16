@@ -22,6 +22,8 @@ private:
         FDG_ORIGIN,
         FDG_DRAG,
         FDG_INERTIA,
+        LIGHTING_DIFFUSE,
+        LIGHTING_AMBIENT,
         NONE, // Must be last.
     } current_parameter = Parameter::NONE;
 

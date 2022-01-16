@@ -40,6 +40,11 @@ public:
 
     void set_camera(const glm::vec3& focus, float distance);
 
+    float get_ambient() const { return objectAmbientStrength; }
+    void set_ambient(float f) { objectAmbientStrength = f; }
+    float get_diffuse() const { return objectDiffuseStrength; }
+    void set_diffuse(float f) { objectDiffuseStrength = f; }
+
 private:
     std::string name = "Lansnoop Viewer";
     int window_width = 800, window_height = 600;
@@ -60,6 +65,10 @@ private:
     unsigned int objectShaderViewLoc;
     unsigned int objectShaderProjectionLoc;
     unsigned int objectShaderColorLoc;
+    unsigned int objectShaderAmbientStrengthLoc;
+    unsigned int objectShaderDiffuseStrengthLoc;
+    float objectDiffuseStrength = 0.75f;
+    float objectAmbientStrength = 0.2f;
 
     unsigned int lineShaderViewLoc;
     unsigned int lineShaderProjectionLoc;

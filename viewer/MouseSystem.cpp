@@ -1,5 +1,7 @@
 #include <cmath>
+#include <array>
 
+#include "util.hpp"
 #include "MouseSystem.hpp"
 #include "DisplaySystem.hpp"
 
@@ -64,41 +66,36 @@ void MouseSystem::update(Components& components, DisplaySystem& display)
             glm::vec3 ray_wor = display.get_view_inverse() * ray_eye;
             ray_wor = normalize(ray_wor);
             // TODO: bail out if ray_wor.z is near 0.0.
-            float t = (0.5f - display.get_look_from().z) / ray_wor.z;
-            glm::vec3 z05 = display.get_look_from() + ray_wor * t;
-            t = (1.5f - display.get_look_from().z) / ray_wor.z;
-            glm::vec3 z15 = display.get_look_from() + ray_wor * t;
 
-            // for (const auto& [location, shape] : Components::Join(components.location_components, components.shape_components)) {
+            //  Find the intersection of the mouse ray with any of the six
+            //  faces making up a cube centered at location.
+            glm::vec3 A = display.get_look_from();
+            glm::vec3 B = ray_wor;
+            const float radius = 0.5f; //  Distance from center to face.
+            const std::array face_normals {
+                glm::vec3( 0.f,  0.f,  1.f),
+                glm::vec3( 0.f,  0.f, -1.f),
+                glm::vec3( 1.f,  0.f,  0.f),
+                glm::vec3(-1.f,  0.f,  0.f),
+                glm::vec3( 0.f,  1.f,  0.f),
+                glm::vec3( 0.f, -1.f,  0.f),
+            };
+            float min_t = FLT_MAX;
             for (const LocationComponent& location : components.location_components) {
-                //  Check for intersection of the ray with the top of the
-                //  box at Z=1.5 or the bottom of the box at Z=0.5.
-                if ((location.x - 0.5f < z05.x
-                    && z05.x < location.x + 0.5f
-                    && location.y - 0.5f < z05.y
-                    && z05.y < location.y + 0.5f)
-                    || (location.x - 0.5f < z15.x
-                    && z15.x < location.x + 0.5f
-                    && location.y - 0.5f < z15.y
-                    && z15.y < location.y + 0.5f)
-                ) {
-                    new_hover_id = location.entity_id;
-                    break;
+                for (const glm::vec3& N : face_normals) {
+                    glm::vec3 P = glm::vec3(location.x, location.y, 1.f) + N * radius;
+                    float t = glm::dot(P-A, N) / glm::dot(B, N);
+                    //  TODO: bail if glm::dot(B, N) ~= 0
+                    glm::vec3 d(A+B*t-P);
+                    if (std::max(fabs(d.x), std::max(fabs(d.y), fabs(d.z))) <= radius) {
+                        if (t > 0.0 && t < min_t) {
+                            new_hover_id = location.entity_id;
+                            min_t = t;
+                        }
+                    }
                 }
             }
         }
-#if 0
-    if (new_hover_id != this->hoverId) {
-        if (new_hover_id) {
-            try {
-                DescriptionComponent& description = components.get(this->hoverId, components.description_components);
-                std::cout << "mouse hovered entity " << this->hoverId << ": " << description.description << std::endl;
-            } catch (...) {
-                std::cout << "mouse hovered entity " << this->hoverId << ": (no description)" << std::endl;
-            }
-        }
-    }
-#endif
     this->hoverId = new_hover_id;
 
     //  Slave dragged entity's location to the mouse.

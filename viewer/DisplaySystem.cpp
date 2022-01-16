@@ -131,13 +131,13 @@ void DisplaySystem::init_object_shaders()
         "in vec3 FragPos;\n"
         "in vec3 Normal;\n"
         "uniform vec3 objectColor;\n"
+        "uniform float ambientStrength;\n"
+        "uniform float diffuseStrength;\n"
         "out vec4 FragColor;\n"
         "void main()\n"
         "{\n"
-        "   float ambientStrength = 0.6;\n"
-        "   float diffuseStrength = 0.4;\n"
         "   vec3 lightPos = vec3(15.0, -15.0, 50.0);\n"
-        "   vec3 lightColor = vec3(0.75, 0.75, 0.75);\n"
+        "   vec3 lightColor = vec3(1.0, 1.0, 1.0);\n"
         "   vec3 ambient = ambientStrength * lightColor;\n"
         "   vec3 norm = normalize(Normal);\n"
         "   vec3 lightDir = normalize(lightPos - FragPos);\n"
@@ -360,7 +360,7 @@ void DisplaySystem::init_cube_vao()
 void DisplaySystem::init_cylinder_vao()
 {
     std::vector<float> vertices; // Six floats per vertex.
-    const int sides = 8;
+    const int sides = 16;
     const float radius = 0.5f;
 
     auto add_vertex = [&vertices](const std::array<float, 6>& vs) {
@@ -484,6 +484,8 @@ void DisplaySystem::init()
     this->objectShaderViewLoc = glGetUniformLocation(this->objectShader, "view");
     this->objectShaderProjectionLoc = glGetUniformLocation(this->objectShader, "projection");
     this->objectShaderColorLoc = glGetUniformLocation(this->objectShader, "objectColor");
+    this->objectShaderAmbientStrengthLoc = glGetUniformLocation(this->objectShader, "ambientStrength");
+    this->objectShaderDiffuseStrengthLoc = glGetUniformLocation(this->objectShader, "diffuseStrength");
 
     this->lineShaderViewLoc = glGetUniformLocation(this->lineShader, "view");
     this->lineShaderProjectionLoc = glGetUniformLocation(this->lineShader, "projection");
@@ -519,6 +521,9 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
     glUniformMatrix4fv(     this->objectShaderModelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(      this->objectShaderViewLoc, 1, GL_FALSE, glm::value_ptr(this->view));
     glUniformMatrix4fv(this->objectShaderProjectionLoc, 1, GL_FALSE, glm::value_ptr(this->projection));
+    glUniform1f(this->objectShaderDiffuseStrengthLoc, this->objectDiffuseStrength);
+    glUniform1f(this->objectShaderAmbientStrengthLoc, this->objectAmbientStrength);
+    glLineWidth(1.f);
 
     //  Draw all shape components.
     //

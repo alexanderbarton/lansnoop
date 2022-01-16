@@ -27,13 +27,6 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
     for (unsigned int codepoint : this->pending_chars) {
         switch (codepoint) {
 
-#if 0
-            case 'D':
-            case 'd':
-                components.describe_entities();
-                break;
-#endif
-
             // case GLFW_KEY_ESCAPE:
             case 'Q':
             case 'q':
@@ -42,9 +35,12 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
 
             case 'T':
             case 't':
+                components.describe_entities();
+#if 0
                 for (const auto& [location, description] : Components::Join(components.location_components, components.description_components)) {
                     std::cout << location.entity_id << " " << description.description << "\n";
                 }
+#endif
                 break;
 
             case '>':
@@ -90,6 +86,14 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
                     case Parameter::FDG_INERTIA:
                         std::cout << (fdg.k_vertex_inertia *= factor);
                         break;
+                    case Parameter::LIGHTING_DIFFUSE:
+                        display.set_diffuse(display.get_diffuse() * factor);
+                        std::cout << display.get_diffuse();
+                        break;
+                    case Parameter::LIGHTING_AMBIENT:
+                        display.set_ambient(display.get_ambient() * factor);
+                        std::cout << display.get_ambient();
+                        break;
                     case Parameter::NONE:
                         break;
                 }
@@ -117,29 +121,35 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
     }
     this->pending_chars.clear();
 
-    //  "WASD" camera movement
+
+    //  First person movement by holding down the WASD keys
     //
-    float speed = display.get_camera_distance() * 1.0f / 60.f;
-    glm::vec3 focus = display.get_camera_focus();
+    float x = 0.f, y = 0.f;
     bool moved = false;
     if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_D)) {
-        focus += display.get_camera_right() * speed;
+        x += 1.f;
         moved = true;
     }
     if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_A)) {
-        focus -= display.get_camera_right() * speed;
+        x -= 1.f;
         moved = true;
     }
     if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_W)) {
-        focus += display.get_camera_front() * speed;
+        y += 1.f;
         moved = true;
     }
     if (GLFW_PRESS == glfwGetKey(window, GLFW_KEY_S)) {
-        focus -= display.get_camera_front() * speed;
+        y -= 1.f;
         moved = true;
     }
-    if (moved)
-        display.set_camera(focus, display.get_camera_distance());
+    if (moved) {
+        //  Make movement speed a function of field of view.
+        glm::vec3 focus = display.get_camera_focus();
+        const float dt = 1.f / 60.f; // Assume 60 fps.
+        float speed = glm::length(focus - display.get_look_from());
+        glm::vec3 displacement = speed * dt * (display.get_camera_right() * x + display.get_camera_front() * y);
+        display.set_camera(focus + displacement, display.get_camera_distance());
+    }
 }
 
 
@@ -157,6 +167,8 @@ const char* KeyboardSystem::to_s(Parameter p)
         case Parameter::FDG_ORIGIN:          return "FDG_ORIGIN";
         case Parameter::FDG_DRAG:            return "FDG_DRAG";
         case Parameter::FDG_INERTIA:         return "FDG_INERTIA";
+        case Parameter::LIGHTING_DIFFUSE:    return "LIGHTING_DIFFUSE";
+        case Parameter::LIGHTING_AMBIENT:    return "LIGHTING_AMBIENT";
         case Parameter::NONE:                return "NONE";
     }
     return "(invalid)";
