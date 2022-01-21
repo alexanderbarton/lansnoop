@@ -63,7 +63,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Network
         std::string description("network ");
         description += std::to_string(network.id());
         components.description_components.push_back(DescriptionComponent(entity_id, description));
-        components.location_components.push_back(LocationComponent(entity_id, 16*rng(), 16*rng(), 1.0f));
+        components.location_components.push_back(LocationComponent(entity_id, 2*rng(), 2*rng(), 1.0f));
         // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         this->network_to_entity_ids[network.id()] = entity_id;

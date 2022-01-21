@@ -174,6 +174,132 @@ void DisplaySystem::init_object_shaders()
 }
 
 
+#if 0
+void DisplaySystem::init_shadow_shaders()
+{
+    char infoLog[512];
+    int success;
+
+    const char *vertexShaderSource =
+        "#version 330 core\n"
+        "layout (location = 0) in vec3 aPos;\n"
+        "\n"
+        "uniform mat4 lightSpaceMatrix;\n"
+        "uniform mat4 model;\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    gl_Position = lightSpaceMatrix * model * vec4(aPos, 1.0);\n"
+        "}\n";
+    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    if (!vertexShader)
+        check_gl_error("glCreateShader(GL_VERTEX_SHADER)");
+    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
+    glCompileShader(vertexShader);
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(vertexShader, sizeof(infoLog), NULL, infoLog);
+        throw std::runtime_error(std::string("shadow vertex shader compilation failed: ") + infoLog);
+    }
+
+    const char *fragmentShaderSource =
+        "#version 330 core\n"
+        "\n"
+        "void main()\n"
+        "{\n"
+        "    // gl_FragDepth = gl_FragCoord.z;\n"
+        "}\n";
+    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    if (!fragmentShader)
+        check_gl_error("glCreateShader(GL_FRAGMENT_SHADER)");
+    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
+    glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        glGetShaderInfoLog(fragmentShader, sizeof(infoLog), NULL, infoLog);
+        throw std::runtime_error(std::string("shadow fragment shader compilation failed: ") + infoLog);
+    }
+
+    this->shadowShader = glCreateProgram();
+    if (!this->shadowShader)
+        check_gl_error("glCreateProgram()");
+    glAttachShader(this->shadowShader, vertexShader);
+    glAttachShader(this->shadowShader, fragmentShader);
+    glLinkProgram(this->shadowShader);
+    glGetProgramiv(this->shadowShader, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(this->shadowShader, sizeof(infoLog), NULL, infoLog);
+        throw std::runtime_error(std::string("shadow shader program linking failed: ") + infoLog);
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+}
+
+
+void DisplaySystem::shadow_buffer_init()
+{
+    glGenFramebuffers(1, &this->depthMapFBO);
+
+    glGenTextures(1, &this->depthMap);
+    glBindTexture(GL_TEXTURE_2D, this->depthMap);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                 this->SHADOW_WIDTH, this->SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, this->depthMapFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, this->depthMap, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
+void DisplaySystem::render_shadow_map(Components& components)
+{
+    float near_plane = 1.0f, far_plane = 7.5f;
+    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+    glm::mat4 lightView = glm::lookAt(glm::vec3(15.0, -15.0, 50.0),  //  eye
+                                      // glm::vec3(-2.0f, 4.0f, -1.0f),  //  eye
+                                      glm::vec3( 0.0f, 0.0f,  0.0f),  //  target
+                                      glm::vec3( 0.0f, 1.0f,  0.0f)); //  up
+    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+    glUseProgram(this->shadowShader);
+    unsigned int lightSpaceMatrixLoc = glGetUniformLocation(this->objectShader, "lightSpaceMatrix");
+    unsigned int modelLoc = glGetUniformLocation(this->objectShader, "model");
+    glUniformMatrix4fv(lightSpaceMatrixLoc, 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+    glViewport(0, 0, this->SHADOW_WIDTH, this->SHADOW_HEIGHT);
+    glBindFramebuffer(GL_FRAMEBUFFER, this->depthMapFBO);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    //  Draw all shape components.
+    //
+    auto query = Components::Join(components.location_components, components.shape_components);
+    for (const auto& [location, shape] : query) {
+        glm::mat4 model(1.f);
+        model = glm::translate(model, glm::vec3(location.x, location.y, location.z));
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+        switch (shape.shape) {
+            case ShapeComponent::Shape::BOX:
+                glBindVertexArray(this->cubeVAO);
+                glDrawArrays(GL_TRIANGLES, 0, this->cubeVAOLength);
+                break;
+            case ShapeComponent::Shape::CYLINDER:
+                glBindVertexArray(this->cylinderVAO);
+                glDrawArrays(GL_TRIANGLES, 0, this->cylinderVAOLength);
+                break;
+        }
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+#endif
+
+
 void DisplaySystem::init_line_shaders()
 {
     char infoLog[512];
@@ -513,10 +639,15 @@ void DisplaySystem::drawLine(float ax, float ay, float az, float bx, float by, f
 
 void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
 {
+    /*
+     *  Render objects.
+     */
+    glViewport(0, 0, this->window_width, this->window_height);
     glClearColor(0.05f, 0.07f, 0.07f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // glBindTexture(GL_TEXTURE_2D, this->depthMap);
     glUseProgram(this->objectShader);
+
     glm::mat4 model = glm::mat4(1.f);
     glUniformMatrix4fv(     this->objectShaderModelLoc, 1, GL_FALSE, glm::value_ptr(model));
     glUniformMatrix4fv(      this->objectShaderViewLoc, 1, GL_FALSE, glm::value_ptr(this->view));

@@ -263,7 +263,7 @@ void LabelSystem::render_label(const LabelComponent& label, const LocationCompon
 
     for (const std::string& l : label.labels) {
         render_text(l, x, y, 1.0f, color);
-        render_text(l, x-1.0f, y-1.0f, 1.0f, shadow);
+        render_text(l, x+2.0f, y-2.0f, 1.0f, shadow);
         y -= 14;
     }
 }

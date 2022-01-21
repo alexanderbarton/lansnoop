@@ -70,6 +70,13 @@ private:
     float objectDiffuseStrength = 0.75f;
     float objectAmbientStrength = 0.2f;
 
+#if 0
+    const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+    unsigned int depthMapFBO;
+    unsigned int depthMap;
+    unsigned int shadowShader;
+#endif
+
     unsigned int lineShaderViewLoc;
     unsigned int lineShaderProjectionLoc;
     unsigned int lineShaderLineColorLoc;
@@ -85,6 +92,12 @@ private:
 
     unsigned int objectShader;
     unsigned int lineShader;
+
+#if 0
+    void init_shadow_shaders();
+    void shadow_buffer_init();
+    void render_shadow_map(Components& components);
+#endif
 
     void init_object_shaders();
     void init_line_shaders();
