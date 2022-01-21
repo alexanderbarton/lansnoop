@@ -666,12 +666,12 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
         float brightness = shape.entity_id == mouse_system.get_hover_id() ? 1.5f : 1.0f;
         switch (shape.shape) {
             case ShapeComponent::Shape::BOX:
-                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(1.0, 0.5, 0.2) * brightness));
+                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(shape.color * brightness));
                 glBindVertexArray(this->cubeVAO);
                 glDrawArrays(GL_TRIANGLES, 0, this->cubeVAOLength);
                 break;
             case ShapeComponent::Shape::CYLINDER:
-                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(glm::vec3(0.5, 0.2, 1.0) * brightness));
+                glUniform3fv(this->objectShaderColorLoc, 1, glm::value_ptr(shape.color * brightness));
                 glBindVertexArray(this->cylinderVAO);
                 glDrawArrays(GL_TRIANGLES, 0, this->cylinderVAOLength);
                 break;

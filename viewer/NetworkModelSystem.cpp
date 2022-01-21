@@ -56,6 +56,18 @@ static std::string bytes_to_ip_address(const std::string& bytes)
 }
 
 
+static bool is_rfc1918(const std::string& bytes)
+{
+    unsigned char o0 = bytes[0];
+    unsigned char o1 = bytes[1];
+    return bytes.size() == 4 && (
+        o0 == 10                              //  10.0.0.0/8
+        || (o0 == 172 && o1 >= 16 && o1 <=31) //  172.16.0.0/12
+        || (o0 == 192 && o1 == 168)           //  192.168.0.0/16
+    );
+}
+
+
 void NetworkModelSystem::receive(Components& components, const Lansnoop::Network& network)
 {
     if (!network_to_entity_ids.count(network.id())) {
@@ -85,7 +97,8 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
         components.description_components.push_back(DescriptionComponent(entity_id, description));
         components.label_components.push_back(LabelComponent(entity_id, bytes_to_mac(interface.address())));
         components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
-        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX));
+        glm::vec3 color(1.0, 0.5, 0.2);
+        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX, color));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
         components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
@@ -171,13 +184,17 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
         }
         components.description_components.push_back(DescriptionComponent(entity_id, description));
 
+        glm::vec3 color(0.5, 0.2, 1.0);
+        if (is_rfc1918(ipaddress.address()))
+            color = glm::vec3(0.2, 1.0, 0.5);
+
         std::vector<std::string> labels;
         if (ipaddress.ns_name().size())
             labels.push_back(ipaddress.ns_name());
         labels.push_back(bytes_to_ip_address(ipaddress.address()));
         components.label_components.push_back(LabelComponent(entity_id, labels));
         components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
-        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
+        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER, color));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, attached_entity_id));
         components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, attached_entity_id));
