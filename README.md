@@ -1,5 +1,6 @@
 # Dependencies
-    sudo apt install protobuf-compiler
+    sudo apt install -y protobuf-compiler
+    sudo apt install -y libpcap-dev
     g++
 
 # Executables

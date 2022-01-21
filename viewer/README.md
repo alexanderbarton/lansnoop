@@ -41,10 +41,10 @@ which are not assigned to it.
 
 # Dependencies
 
-sudo apt install libglfw3 libglfw3-dev libglfw3-doc
-sudo apt install libxi-dev
-sudo apt install libglm-dev
-sudo apt install libfreetype6-dev
+sudo apt install -y libglfw3 libglfw3-dev libglfw3-doc
+sudo apt install -y libxi-dev
+sudo apt install -y libglm-dev
+sudo apt install -y libfreetype6-dev
 
 # GLAD
 Generate ZIP file at via http://glad.dav1d.de/ .  Then, unpack it in this directory.

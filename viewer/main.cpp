@@ -1,5 +1,7 @@
+#include <unistd.h>
 #include <iostream>
 #include <stdexcept>
+#include <sys/time.h>
 
 #include "Components.hpp"
 #include "NetworkModelSystem.hpp"
@@ -44,6 +46,9 @@ void Viewer::run(const char* argv0)
 
     while (!this->display_system.should_close())
     {
+        timeval t0;
+        gettimeofday(&t0, nullptr);
+
         this->network_model_system.update(this->components);
         this->fdg_system.update(this->components);
         this->keyboard_system.update(this->components, this->fdg_system, this->display_system);
@@ -53,6 +58,17 @@ void Viewer::run(const char* argv0)
 
         glfwSwapBuffers(this->display_system.get_window());
         glfwPollEvents();
+
+        timeval t1;
+        gettimeofday(&t1, nullptr);
+        timeval dt;
+        timersub(&t1, &t0, &dt);
+        const timeval tc { 0, 1000000/60 };
+        if (timercmp(&tc, &dt, >)) {
+            timeval remainder;
+            timersub(&tc, &dt, &remainder);
+            usleep(remainder.tv_usec);
+        }
     }
     std::cerr << "\n";
 }

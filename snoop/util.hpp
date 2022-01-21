@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <iosfwd>
 
 class MacAddress : public std::array<unsigned char, 6> {};  // Network byte order.
 class IPV4Address : public std::array<unsigned char, 4> {};  // Network byte order.
