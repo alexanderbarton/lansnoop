@@ -7,6 +7,7 @@
 struct LabelComponent {
     int entity_id;
     std::vector<std::string> labels;
+    float fade = 2.f;
 
     LabelComponent(int id) : entity_id(id) {}
 

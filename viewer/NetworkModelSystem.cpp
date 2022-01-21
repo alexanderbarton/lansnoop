@@ -241,10 +241,14 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::IPAddre
             d.description += ")";
         }
         LabelComponent& l = components.get(entity_id, components.label_components);
-        l.labels.clear();
+        std::vector<std::string> new_labels;
         if (ipaddress.ns_name().size())
-            l.labels.push_back(ipaddress.ns_name());
-        l.labels.push_back(bytes_to_ip_address(ipaddress.address()));
+            new_labels.push_back(ipaddress.ns_name());
+        new_labels.push_back(bytes_to_ip_address(ipaddress.address()));
+        if (l.labels != new_labels) {
+            l.labels = new_labels;
+            l.fade = 2.f;
+        }
     }
 }
 

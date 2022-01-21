@@ -26,6 +26,9 @@ private:
     unsigned int objectShader;
     unsigned int VAO, VBO;
 
-    void render_text(const std::string& text, float x, float y, float scale, glm::vec3 color);
-    void render_label(const LabelComponent& label, const LocationComponent& location, DisplaySystem& display);
+    void render_text(const std::string& text, float x, float y, float scale, glm::vec4 color);
+    void render_label(const LabelComponent& label,
+                      const LocationComponent& location,
+                      DisplaySystem& display,
+                      float opaque = 1.f);
 };

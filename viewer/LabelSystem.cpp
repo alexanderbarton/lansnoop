@@ -116,12 +116,12 @@ void LabelSystem::init()
         "out vec4 color;\n"
         "\n"
         "uniform sampler2D text;\n"
-        "uniform vec3 textColor;\n"
+        "uniform vec4 textColor;\n"
         "\n"
         "void main()\n"
         "{\n"
         "    vec4 sampled = vec4(1.0, 1.0, 1.0, texture(text, TexCoords).r);\n"
-        "    color = vec4(textColor, 1.0) * sampled;\n"
+        "    color = textColor * sampled;\n"
         "}";
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     if (!fragmentShader)
@@ -164,9 +164,9 @@ void LabelSystem::init()
 }
 
 
-void LabelSystem::render_text(const std::string& text, float x, float y, float scale, glm::vec3 color)
+void LabelSystem::render_text(const std::string& text, float x, float y, float scale, glm::vec4 color)
 {
-    glUniform3f(glGetUniformLocation(this->objectShader, "textColor"), color.x, color.y, color.z);
+    glUniform4f(glGetUniformLocation(this->objectShader, "textColor"), color.x, color.y, color.z, color.w);
     glActiveTexture(GL_TEXTURE0);
     glBindVertexArray(this->VAO);
 
@@ -233,16 +233,22 @@ void LabelSystem::update(Components& components, DisplaySystem& display, MouseSy
             this->render_label(*label, location, display);
         }
     }
-#else
+#endif
+
+#if 1
     //  Render labels for all entities.
     //
     for (const auto& [ location, label] : Components::Join(components.location_components, components.label_components))
-        this->render_label(label, location, display);
+        if (label.fade > 1.f/120.f) {
+            float opaque = std::min(1.f, label.fade);
+            this->render_label(label, location, display, opaque);
+            label.fade -= 1.f/60.f;
+        }
 #endif
 }
 
 
-void LabelSystem::render_label(const LabelComponent& label, const LocationComponent& location, DisplaySystem& display)
+void LabelSystem::render_label(const LabelComponent& label, const LocationComponent& location, DisplaySystem& display, float opaque)
 {
     glm::vec4 w(location.x, location.y, 0.5f, 1.f);
     w = w - glm::vec4(display.get_camera_front(), 1.f) / 2.f;
@@ -254,8 +260,8 @@ void LabelSystem::render_label(const LabelComponent& label, const LocationCompon
     float x = s.x * display.get_window_width();
     float y = s.y * display.get_window_height();
 
-    glm::vec3 color(0.5, 0.8f, 0.2f);
-    glm::vec3 shadow(0.f, 0.f, 0.f);
+    glm::vec4 color(0.5, 0.8f, 0.2f, opaque);
+    glm::vec4 shadow(0.f, 0.f, 0.f, opaque);
     y -= 14.f;
 
     x = floorf(x);
