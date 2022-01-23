@@ -42,16 +42,16 @@ void Model::note_l2_packet_traffic(const MacAddress& source_address,
         //  In a multicast broadcast, only the source interface is "real".
         //
         if (source_i == this->interfaces_by_address.end()) {
-#if 0
-            long network_id = this->new_network();
-#else
-            //  Assume all interfaces are on the same one network.
             long network_id;
-            if (this->networks.size())
-                network_id = this->networks.begin()->first;
+            if (this->assume_one_lan) {
+                //  Assume all interfaces are on the same network.
+                if (this->networks.size())
+                    network_id = this->networks.begin()->first;
+                else
+                    network_id = this->new_network();
+            }
             else
                 network_id = this->new_network();
-#endif
             source_i = this->new_interface(source_address, network_id);
         }
     }
@@ -64,16 +64,16 @@ void Model::note_l2_packet_traffic(const MacAddress& source_address,
         }
         //  Both interfaces are new to us.
         else if (source_i == this->interfaces_by_address.end() && destination_i == this->interfaces_by_address.end()) {
-#if 0
-            long network_id = this->new_network();
-#else
-            //  Assume all interfaces are on the same one network.
             long network_id;
-            if (this->networks.size())
-                network_id = this->networks.begin()->first;
+            if (this->assume_one_lan) {
+                //  Assume all interfaces are on the same network.
+                if (this->networks.size())
+                    network_id = this->networks.begin()->first;
+                else
+                    network_id = this->new_network();
+            }
             else
                 network_id = this->new_network();
-#endif
             source_i = this->new_interface(source_address, network_id);
             destination_i = this->new_interface(destination_address, network_id);
         }
@@ -427,17 +427,19 @@ Model::IPAddressInfo& Model::new_ip_address(const IPV4Address& address, Cloud& c
     //  to a subcloud named after the ASN.
     //
     if (ip_address_info.as_name.size()) {
+        std::string description = std::string("AS") + std::to_string(ip_address_info.asn) + " " + ip_address_info.as_name;
+
         //  Find an existing subcloud.
         for (long child_id : cloud.child_cloud_ids) {
             Cloud& child_cloud = this->clouds.at(child_id);
-            if (child_cloud.description == ip_address_info.as_name) {
+            if (child_cloud.description == description) {
                 ip_address_info.cloud_id = child_cloud.id;
                 break;
             }
         }
         //  Else make a new subcloud.
         if (ip_address_info.cloud_id == cloud.id) {
-            Cloud& subcloud = new_cloud(cloud, ip_address_info.as_name);
+            Cloud& subcloud = new_cloud(cloud, description);
             ip_address_info.cloud_id = subcloud.id;
         }
     }

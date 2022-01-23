@@ -2,7 +2,14 @@
 #include <sstream>
 #include <iomanip>
 #include <string>
+#include <regex>
+#include <stdexcept>
+
 #include <fcntl.h>
+
+#include <glad/glad.h>
+
+#include "stb_image.h"
 
 #include "EventSerialization.hpp"
 #include "Entities.hpp"
@@ -10,10 +17,59 @@
 
 #include "NetworkModelSystem.hpp"
 
-#include "/home/abarton/debug.hpp"
+
+constexpr float scatter_factor = 2.0f;
+
+namespace {
+    struct TextureMatch {
+        std::regex regex;
+        unsigned int texture;
+    };
+};
+static std::vector<TextureMatch> textures;
+static unsigned int catchall_texture;
 
 
-constexpr float scatter_factor = 1.5f;
+static unsigned int load_texture(const std::string& path)
+{
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
+    if (!data)
+        throw std::invalid_argument(std::string("failed loading ") + path);
+
+    unsigned int texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+
+    return texture;
+}
+
+
+static void load_texture(const std::string& path, const std::string& regex_s)
+{
+    std::regex regex(regex_s, std::regex_constants::icase);
+    unsigned int texture = load_texture(path);
+    textures.push_back(TextureMatch { regex, texture });
+}
+
+
+unsigned int select_interface_texture(const std::string& manufacturer)
+{
+    for (const TextureMatch& m : textures)
+        if (std::regex_match(manufacturer, m.regex))
+            return m.texture;
+
+    return catchall_texture;
+}
 
 
 //  Returns a random value between -1.0 and 1.0.
@@ -75,6 +131,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Network
         std::string description("network ");
         description += std::to_string(network.id());
         components.description_components.push_back(DescriptionComponent(entity_id, description));
+        components.label_components.push_back(LabelComponent(entity_id, std::string("network ") + std::to_string(network.id())));
         components.location_components.push_back(LocationComponent(entity_id, 2*rng(), 2*rng(), 1.0f));
         // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::CYLINDER));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
@@ -85,8 +142,9 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Network
 
 void NetworkModelSystem::receive(Components& components, const Lansnoop::Interface& interface)
 {
+    int network_entity_id = this->network_to_entity_ids.at(interface.network_id());
+
     if (!interface_to_entity_ids.count(interface.id())) {
-        int network_entity_id = this->network_to_entity_ids.at(interface.network_id());
         const LocationComponent& location = components.get(network_entity_id, components.location_components);
         float x = 2*rng() + scatter_factor * location.x;
         float y = 2*rng() + scatter_factor * location.y;
@@ -98,14 +156,24 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
         components.label_components.push_back(LabelComponent(entity_id, bytes_to_mac(interface.address())));
         components.location_components.push_back(LocationComponent(entity_id, x, y, 1.0f));
         glm::vec3 color(1.0, 0.5, 0.2);
-        components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX, color));
+        // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX, color));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
         components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
         components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
         this->interface_to_entity_ids[interface.id()] = entity_id;
+
+        unsigned int texture = select_interface_texture(interface.maker());
+        components.textured_shape_components.push_back(TexturedShapeComponent(entity_id, texture));
     }
     else {
         //  Check for changes to the assignment of this interface to a different network.
+        int entity_id = interface_to_entity_ids.at(interface.id());
+        FDGEdgeComponent& attractor = components.get(entity_id, components.fdg_edge_components);
+        if (attractor.other_entity_id != network_entity_id)
+            attractor.other_entity_id = network_entity_id;
+        InterfaceEdgeComponent& edge = components.get(entity_id, components.interface_edge_components);
+        if (edge.other_entity_id != network_entity_id)
+            edge.other_entity_id = network_entity_id;
     }
 }
 
@@ -294,6 +362,43 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& 
         this->cloud_to_entity_ids[cloud.id()] = entity_id;
     }
     //  TODO: handle cloud updates
+}
+
+
+void NetworkModelSystem::init()
+{
+    load_texture("textures/asus.jpeg", "^ASUSTek.*");
+    load_texture("textures/raspberry-pi.png", "^Raspberry Pi Foundation$");
+    load_texture("textures/sonos.png", "^Sonos, Inc.$");
+    load_texture("textures/apple.png", "^Apple.*$");
+    load_texture("textures/vmware.jpeg", "^VMWare.*");
+    load_texture("textures/cisco.jpeg", "^CISCO.*$");
+    load_texture("textures/intel.png", "^INTEL.*$");
+    load_texture("textures/hp.png", "^hp.*|Hewlett.Packard.*$");
+    load_texture("textures/meraki.jpeg", "^Meraki.*$");
+    load_texture("textures/polycom.png", "^polycom.*$");
+    load_texture("textures/check_point.jpeg", "^Check Point Software Technologies$");
+    load_texture("textures/microsoft.jpeg", "microsoft");
+    load_texture("textures/xerox.png", ".*XEROX.*");
+    load_texture("textures/lg_electronics.jpeg", "^LG Electronics");
+    load_texture("textures/motorola-mobility.png", "^Motorola Mobility.*");
+    load_texture("textures/dell.png", "^Dell.*");
+    load_texture("textures/murata.jpeg", "^Murata.*");
+    load_texture("textures/paloalto.jpeg", "^Palo Alto Networks.*");
+    load_texture("textures/juniper-networks.jpeg", "^Juniper Networks.*");
+    load_texture("textures/riverbed.jpeg", "^Riverbed Technology.*");
+    load_texture("textures/F5_Networks.jpeg", "^F5 Networks.*");
+    load_texture("textures/ibm.jpeg", "^IBM.*");
+    load_texture("textures/fortinet.jpeg", "^Fortinet.*");
+    load_texture("textures/pcs-systemtechnik.png", "^PCS Systemtechnik GmbH$");
+    load_texture("textures/samsung.png", "^Samsung Electronics Co.,Ltd$");
+    load_texture("textures/withings.png", "^Withings$");
+
+    //  Final catch-all matching anything:
+    catchall_texture = load_texture("textures/default.png");
+
+    //  TODO: make texture files relative to some command line parameter.
+    //  TODO: move this configuration to a runtime loaded file.
 }
 
 

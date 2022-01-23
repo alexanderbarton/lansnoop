@@ -58,6 +58,9 @@ Also, `touch include/glad/glad.h include/KHR/khrplatform.h src/glad.c` if unzip 
 
 `$ make && sudo ../snoop/build/snoop -v -i enp6s0 --oui ../oui.csv | build/viewer /dev/stdin`
 
+# Credits
+Sean Barrett's stb_image.h came from https://github.com/nothings/stb/blob/master/stb_image.h
+
 # References
 GLFW documentation at https://www.glfw.org/documentation.html .
 Also, if libglfw3-doc is installed, file:///usr/share/doc/libglfw3-dev/html/index.html .

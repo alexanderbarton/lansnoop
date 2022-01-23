@@ -240,7 +240,7 @@ void LabelSystem::update(Components& components, DisplaySystem& display, MouseSy
     //
     for (const auto& [ location, label] : Components::Join(components.location_components, components.label_components))
         if (label.fade > 1.f/120.f) {
-            float opaque = std::min(1.f, label.fade);
+            float opaque = std::min(2.f, label.fade) / 2.f;
             this->render_label(label, location, display, opaque);
             label.fade -= 1.f/60.f;
         }

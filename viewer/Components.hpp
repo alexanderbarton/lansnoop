@@ -6,6 +6,7 @@
 #include "DescriptionComponent.hpp"
 #include "LabelComponent.hpp"
 #include "ShapeComponent.hpp"
+#include "TexturedShapeComponent.hpp"
 #include "LocationComponent.hpp"
 #include "FDGVertexComponent.hpp"
 #include "FDGEdgeComponent.hpp"
@@ -27,6 +28,7 @@ struct Components {
     std::vector<LabelComponent> label_components;
     std::vector<LocationComponent> location_components;
     std::vector<ShapeComponent> shape_components;
+    std::vector<TexturedShapeComponent> textured_shape_components;
     std::vector<FDGVertexComponent> fdg_vertex_components;
     std::vector<FDGEdgeComponent> fdg_edge_components;
     std::vector<InterfaceEdgeComponent> interface_edge_components;

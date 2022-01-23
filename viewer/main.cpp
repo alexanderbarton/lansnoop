@@ -10,6 +10,7 @@
 #include "KeyboardSystem.hpp"
 #include "MouseSystem.hpp"
 #include "LabelSystem.hpp"
+#include "TexturedShapeSystem.hpp"
 
 
 class Viewer {
@@ -25,6 +26,7 @@ private:
     KeyboardSystem keyboard_system;
     MouseSystem mouse_system;
     LabelSystem label_system;
+    TexturedShapeSystem textured_shape_system;
 };
 
 
@@ -43,6 +45,7 @@ void Viewer::run(const char* argv0)
     this->keyboard_system.init(display_system.get_window());
     this->mouse_system.init(display_system.get_window());
     this->label_system.init();
+    this->textured_shape_system.init();
 
     while (!this->display_system.should_close())
     {
@@ -55,6 +58,7 @@ void Viewer::run(const char* argv0)
         this->mouse_system.update(this->components, this->display_system);
         this->display_system.update(this->components, this->mouse_system);
         this->label_system.update(this->components, this->display_system, this->mouse_system);
+        this->textured_shape_system.update(this->components, this->display_system);
 
         glfwSwapBuffers(this->display_system.get_window());
         glfwPollEvents();

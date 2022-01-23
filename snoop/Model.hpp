@@ -73,10 +73,14 @@ public:
     void load_prefixes(const std::string& path, bool verbose = false);
     void load_asns(const std::string& path, bool verbose = false);
 
+    void one_lan(bool b) { assume_one_lan = b; }
+
 private:
 
     long now = 0; //  Nanoseconds since the epoch.
     long packet_count = 0;
+
+    bool assume_one_lan { false };
 
     //  Unique ID generator.
     //  First ID is 1 because, in some cases, 0 means "none".
@@ -138,7 +142,7 @@ private:
     std::map<MacAddress, Interface>::iterator new_interface(const MacAddress& address, long network_id);
     IPAddressInfo& new_ip_address(const IPV4Address& address, long interface_id);
     IPAddressInfo& new_ip_address(const IPV4Address& address, Cloud& cloud);
-    Cloud& new_cloud(const Interface&, const std::string& description = "interface-attached");
+    Cloud& new_cloud(const Interface&, const std::string& description = "IP cloud");
     Cloud& new_cloud(Cloud&, const std::string& description = "cloud-attached");
 
     //  Merge two networks.

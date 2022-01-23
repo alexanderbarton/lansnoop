@@ -166,6 +166,7 @@ static void usage(const char* argv0, std::ostream& out)
     out << "  --asn       Load ASN table from file." << std::endl;
     out << "  --oui       Load OUI information from the named CSV file." << std::endl;
     out << "  --prefix    Load network prefix table named file." << std::endl;
+    out << "  --one-lan   Assume all interfaces the same logical Ethenet network." << std::endl;
     out << "  -r          Read packets from the named libpcap savefile." << std::endl;
     out << "  -v          Be verbose.  Print packet stats to stderr on exit." << std::endl;
 }
@@ -192,6 +193,7 @@ int main(int argc, char **argv)
         std::string file, iface, oui_path;
         std::vector<std::string> prefix_paths;
         std::vector<std::string> asn_paths;
+        Snoop snoop;
 
         bool verbose = false;
         int i = 1;
@@ -215,6 +217,10 @@ int main(int argc, char **argv)
                 if (i >= argc)
                     throw std::invalid_argument("--oui expects a CSV file name, none given");
                 oui_path = argv[i++];
+            }
+            else if (std::string("--one-lan") == argv[i]) {
+                ++i;
+                snoop.get_model().one_lan(true);
             }
             else if (std::string("--prefix") == argv[i]) {
                 ++i;
@@ -242,7 +248,6 @@ int main(int argc, char **argv)
 
         register_signal_handler();
 
-        Snoop snoop;
         if (oui_path.size())
             snoop.get_model().load_oui(oui_path, verbose);
 
