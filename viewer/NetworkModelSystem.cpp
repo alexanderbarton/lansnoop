@@ -158,7 +158,7 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Interfa
         glm::vec3 color(1.0, 0.5, 0.2);
         // components.shape_components.push_back(ShapeComponent(entity_id, ShapeComponent::Shape::BOX, color));
         components.fdg_vertex_components.push_back(FDGVertexComponent(entity_id));
-        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id));
+        components.fdg_edge_components.push_back(FDGEdgeComponent(entity_id, network_entity_id, 10.f));
         components.interface_edge_components.push_back(InterfaceEdgeComponent(entity_id, network_entity_id));
         this->interface_to_entity_ids[interface.id()] = entity_id;
 
@@ -367,32 +367,34 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& 
 
 void NetworkModelSystem::init()
 {
-    load_texture("textures/asus.jpeg", "^ASUSTek.*");
-    load_texture("textures/raspberry-pi.png", "^Raspberry Pi Foundation$");
-    load_texture("textures/sonos.png", "^Sonos, Inc.$");
     load_texture("textures/apple.png", "^Apple.*$");
-    load_texture("textures/vmware.jpeg", "^VMWare.*");
-    load_texture("textures/cisco.jpeg", "^CISCO.*$");
-    load_texture("textures/intel.png", "^INTEL.*$");
-    load_texture("textures/hp.png", "^hp.*|Hewlett.Packard.*$");
-    load_texture("textures/meraki.jpeg", "^Meraki.*$");
-    load_texture("textures/polycom.png", "^polycom.*$");
+    load_texture("textures/asus.jpeg", "^ASUSTek.*");
     load_texture("textures/check_point.jpeg", "^Check Point Software Technologies$");
-    load_texture("textures/microsoft.jpeg", "microsoft");
-    load_texture("textures/xerox.png", ".*XEROX.*");
-    load_texture("textures/lg_electronics.jpeg", "^LG Electronics");
-    load_texture("textures/motorola-mobility.png", "^Motorola Mobility.*");
+    load_texture("textures/cisco.jpeg", "^CISCO.*$");
     load_texture("textures/dell.png", "^Dell.*");
-    load_texture("textures/murata.jpeg", "^Murata.*");
-    load_texture("textures/paloalto.jpeg", "^Palo Alto Networks.*");
-    load_texture("textures/juniper-networks.jpeg", "^Juniper Networks.*");
-    load_texture("textures/riverbed.jpeg", "^Riverbed Technology.*");
     load_texture("textures/F5_Networks.jpeg", "^F5 Networks.*");
-    load_texture("textures/ibm.jpeg", "^IBM.*");
     load_texture("textures/fortinet.jpeg", "^Fortinet.*");
+    load_texture("textures/google.png", ".*Google.*");
+    load_texture("textures/hp.png", "^hp.*|Hewlett.Packard.*$");
+    load_texture("textures/ibm.jpeg", "^IBM.*");
+    load_texture("textures/intel.png", "^INTEL.*$");
+    load_texture("textures/juniper-networks.jpeg", "^Juniper Networks.*");
+    load_texture("textures/lg_electronics.jpeg", "^LG Electronics");
+    load_texture("textures/meraki.jpeg", "^Meraki.*$");
+    load_texture("textures/microsoft.jpeg", "microsoft");
+    load_texture("textures/motorola-mobility.png", "^Motorola Mobility.*");
+    load_texture("textures/murata.jpeg", "^Murata.*");
+    load_texture("textures/netgear.png", "^NETGEAR$");
+    load_texture("textures/paloalto.jpeg", "^Palo Alto Networks.*");
     load_texture("textures/pcs-systemtechnik.png", "^PCS Systemtechnik GmbH$");
+    load_texture("textures/polycom.png", "^polycom.*$");
+    load_texture("textures/raspberry-pi.png", "^Raspberry Pi Foundation$");
+    load_texture("textures/riverbed.jpeg", "^Riverbed Technology.*");
     load_texture("textures/samsung.png", "^Samsung Electronics Co.,Ltd$");
+    load_texture("textures/sonos.png", "^Sonos, Inc.$");
+    load_texture("textures/vmware.jpeg", "^VMWare.*");
     load_texture("textures/withings.png", "^Withings$");
+    load_texture("textures/xerox.png", ".*XEROX.*");
 
     //  Final catch-all matching anything:
     catchall_texture = load_texture("textures/default.png");

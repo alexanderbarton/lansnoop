@@ -8,6 +8,9 @@
 struct FDGEdgeComponent {
     int entity_id;     // This entity ID.
     int other_entity_id;
+    float length; // The length the edge wants to be when fully relaxed.
 
-    FDGEdgeComponent(int entity_id, int other_entity_id) : entity_id(entity_id), other_entity_id(other_entity_id) {};
+    FDGEdgeComponent(int entity_id, int other_entity_id, float length = 0.f)
+        : entity_id(entity_id), other_entity_id(other_entity_id), length(length)
+    {};
 };

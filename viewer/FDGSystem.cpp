@@ -79,11 +79,11 @@ void FDGSystem::update(Components& components)
             throw std::runtime_error(std::string("FDGSystem::update(): entity ID ") + std::to_string(edge.other_entity_id) + " not found in entity_to_node_index");
         Node& a = nodes[entity_to_node_index[edge.entity_id]];
         Node& b = nodes[entity_to_node_index[edge.other_entity_id]];
-        // float d = sqrt((a.px-b.px)*(a.px-b.px)+(a.py-b.py)*(a.py-b.py));
-        a.fx += this->k_link_attraction * (b.px-a.px);
-        a.fy += this->k_link_attraction * (b.py-a.py);
-        b.fx += this->k_link_attraction * (a.px-b.px);
-        b.fy += this->k_link_attraction * (a.py-b.py);
+        float d = sqrt((a.px-b.px)*(a.px-b.px)+(a.py-b.py)*(a.py-b.py));
+        a.fx += this->k_link_attraction * (d-edge.length) * (b.px-a.px) / d;
+        a.fy += this->k_link_attraction * (d-edge.length) * (b.py-a.py) / d;
+        b.fx += this->k_link_attraction * (d-edge.length) * (a.px-b.px) / d;
+        b.fy += this->k_link_attraction * (d-edge.length) * (a.py-b.py) / d;
     }
 #endif
 
