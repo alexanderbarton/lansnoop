@@ -1,6 +1,9 @@
 # Conventions
 
- * Objects have a unique ID stored in their `id` field.  This ID will be unique among that type of object. (At least.)
+ * Objects have a unique ID stored in their `id` field.
+ * Object IDs will be unique among all objects.
+ * They won't be re-used to identify a different object after the first's object's lifetime is over..
+ * Object IDs are always greater than 0.  (0 is reserved to mean "nothing".)
  * Objects refer to other objects via a `foo_id` field.
  * An object is "done" when its `fini` field is set. Once set, the object won't be updated again.  It's safe to delete it.
  * No object will refer to a "fini" object.

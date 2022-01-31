@@ -39,12 +39,6 @@ host's IP address.  But that's not certain.
 A gateway router (routing to the internet), or even a host hosting a VM, receives IP traffic for IP addresses
 which are not assigned to it.
 
-# Dependencies
-
-sudo apt install -y libglfw3 libglfw3-dev libglfw3-doc
-sudo apt install -y libxi-dev
-sudo apt install -y libglm-dev
-sudo apt install -y libfreetype6-dev
 
 # GLAD
 Generate ZIP file at via http://glad.dav1d.de/ .  Then, unpack it in this directory.
@@ -56,10 +50,7 @@ Also, `touch include/glad/glad.h include/KHR/khrplatform.h src/glad.c` if unzip 
 
 # Running
 
-`$ make && sudo ../snoop/build/snoop -v -i enp6s0 --oui ../oui.csv | build/viewer /dev/stdin`
-
-# Credits
-Sean Barrett's stb_image.h came from https://github.com/nothings/stb/blob/master/stb_image.h
+`$ make && sudo ../snoop/build/snoop -v -i enp6s0 --oui ../oui.csv --prefix ../asndata/data-raw-table --asn ../asndata/data-used-autnums | tee opt.events | build/viewer /dev/stdin`
 
 # References
 GLFW documentation at https://www.glfw.org/documentation.html .

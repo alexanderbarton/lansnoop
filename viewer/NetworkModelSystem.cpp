@@ -367,37 +367,38 @@ void NetworkModelSystem::receive(Components& components, const Lansnoop::Cloud& 
 
 void NetworkModelSystem::init()
 {
-    load_texture("textures/apple.png", "^Apple.*$");
-    load_texture("textures/asus.jpeg", "^ASUSTek.*");
-    load_texture("textures/check_point.jpeg", "^Check Point Software Technologies$");
-    load_texture("textures/cisco.jpeg", "^CISCO.*$");
-    load_texture("textures/dell.png", "^Dell.*");
-    load_texture("textures/F5_Networks.jpeg", "^F5 Networks.*");
-    load_texture("textures/fortinet.jpeg", "^Fortinet.*");
-    load_texture("textures/google.png", ".*Google.*");
-    load_texture("textures/hp.png", "^hp.*|Hewlett.Packard.*$");
-    load_texture("textures/ibm.jpeg", "^IBM.*");
-    load_texture("textures/intel.png", "^INTEL.*$");
-    load_texture("textures/juniper-networks.jpeg", "^Juniper Networks.*");
-    load_texture("textures/lg_electronics.jpeg", "^LG Electronics");
-    load_texture("textures/meraki.jpeg", "^Meraki.*$");
-    load_texture("textures/microsoft.jpeg", "microsoft");
-    load_texture("textures/motorola-mobility.png", "^Motorola Mobility.*");
-    load_texture("textures/murata.jpeg", "^Murata.*");
-    load_texture("textures/netgear.png", "^NETGEAR$");
-    load_texture("textures/paloalto.jpeg", "^Palo Alto Networks.*");
-    load_texture("textures/pcs-systemtechnik.png", "^PCS Systemtechnik GmbH$");
-    load_texture("textures/polycom.png", "^polycom.*$");
-    load_texture("textures/raspberry-pi.png", "^Raspberry Pi Foundation$");
-    load_texture("textures/riverbed.jpeg", "^Riverbed Technology.*");
-    load_texture("textures/samsung.png", "^Samsung Electronics Co.,Ltd$");
-    load_texture("textures/sonos.png", "^Sonos, Inc.$");
-    load_texture("textures/vmware.jpeg", "^VMWare.*");
-    load_texture("textures/withings.png", "^Withings$");
-    load_texture("textures/xerox.png", ".*XEROX.*");
+    const std::string path = "viewer/textures/";
+    load_texture(path + "apple.png", "^Apple.*$");
+    load_texture(path + "asus.jpeg", "^ASUSTek.*");
+    load_texture(path + "check_point.jpeg", "^Check Point Software Technologies$");
+    load_texture(path + "cisco.jpeg", "^CISCO.*$");
+    load_texture(path + "dell.png", "^Dell.*");
+    load_texture(path + "F5_Networks.jpeg", "^F5 Networks.*");
+    load_texture(path + "fortinet.jpeg", "^Fortinet.*");
+    load_texture(path + "google.png", ".*Google.*");
+    load_texture(path + "hp.png", "^hp.*|Hewlett.Packard.*$");
+    load_texture(path + "ibm.jpeg", "^IBM.*");
+    load_texture(path + "intel.png", "^INTEL.*$");
+    load_texture(path + "juniper-networks.jpeg", "^Juniper Networks.*");
+    load_texture(path + "lg_electronics.jpeg", "^LG Electronics");
+    load_texture(path + "meraki.jpeg", "^Meraki.*$");
+    load_texture(path + "microsoft.jpeg", "microsoft");
+    load_texture(path + "motorola-mobility.png", "^Motorola Mobility.*");
+    load_texture(path + "murata.jpeg", "^Murata.*");
+    load_texture(path + "netgear.png", "^NETGEAR$");
+    load_texture(path + "paloalto.jpeg", "^Palo Alto Networks.*");
+    load_texture(path + "pcs-systemtechnik.png", "^PCS Systemtechnik GmbH$");
+    load_texture(path + "polycom.png", "^polycom.*$");
+    load_texture(path + "raspberry-pi.png", "^Raspberry Pi Foundation$");
+    load_texture(path + "riverbed.jpeg", "^Riverbed Technology.*");
+    load_texture(path + "samsung.png", "^Samsung Electronics Co.,Ltd$");
+    load_texture(path + "sonos.png", "^Sonos, Inc.$");
+    load_texture(path + "vmware.jpeg", "^VMWare.*");
+    load_texture(path + "withings.png", "^Withings$");
+    load_texture(path + "xerox.png", ".*XEROX.*");
 
     //  Final catch-all matching anything:
-    catchall_texture = load_texture("textures/default.png");
+    catchall_texture = load_texture(path + "default.png");
 
     //  TODO: make texture files relative to some command line parameter.
     //  TODO: move this configuration to a runtime loaded file.

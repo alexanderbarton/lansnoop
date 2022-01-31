@@ -27,6 +27,11 @@ void KeyboardSystem::update(Components& components, FDGSystem& fdg, DisplaySyste
     for (unsigned int codepoint : this->pending_chars) {
         switch (codepoint) {
 
+            case 'P':
+            case 'p':
+                display.polygon_mode_toggle();
+                break;
+
             // case GLFW_KEY_ESCAPE:
             case 'Q':
             case 'q':
