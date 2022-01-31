@@ -1,3 +1,6 @@
 */build/*
 tags
 .*.swp
+data-raw-table
+data-used-autnums
+oui.csv

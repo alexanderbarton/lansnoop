@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Lansnoop;
+
+//  A connection is some communication session between two IP addresses.
+// 
+message Connection {
+    uint32 id = 1;  // Immutable.
+    bool fini = 2;
+
+    uint32 ipaddress_a_id = 3;
+    uint32 ipaddress_b_id = 4;
+
+    enum Protocol {
+        UDP = 0;
+        TCP = 1;
+        DNS = 2;
+        // HTTP = 3;
+        // HTTPS = 4;
+    };
+    Protocol protocol = 5;
+    string description = 6;
+}

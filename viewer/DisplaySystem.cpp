@@ -639,6 +639,11 @@ void DisplaySystem::drawLine(float ax, float ay, float az, float bx, float by, f
 
 void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
 {
+    if (this->polygon_mode)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     /*
      *  Render objects.
      */
@@ -712,6 +717,7 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
             drawLine(z0.x,      z0.y-0.5f, z0.z, z0.x,      z0.y+0.5f, z0.z);
             glLineWidth(3.f);
         }
+    glLineWidth(1.f);
 #endif
 
 #if 0
@@ -786,7 +792,7 @@ void DisplaySystem::update(Components& components, MouseSystem& mouse_system)
     glLineWidth(3.f);
     drawLine(0.5f, 0.f, 0.f, -0.5f, 0.f, 0.f);
     drawLine(0.f, 0.5f, 0.f, 0.f, -0.5f, 0.f);
-    glLineWidth(3.f);
+    glLineWidth(1.f);
 #endif
 
     // glBindVertexArray(0); // no need to unbind it every time

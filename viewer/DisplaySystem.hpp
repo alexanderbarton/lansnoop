@@ -45,6 +45,8 @@ public:
     float get_diffuse() const { return objectDiffuseStrength; }
     void set_diffuse(float f) { objectDiffuseStrength = f; }
 
+    void polygon_mode_toggle() { polygon_mode = !polygon_mode; }
+
 private:
     std::string name = "Lansnoop Viewer";
     int window_width = 800, window_height = 600;
@@ -58,6 +60,7 @@ private:
     glm::mat4 projection;
     glm::mat4 view_inverse;
     glm::mat4 projection_inverse;
+    bool polygon_mode = false;
 
     int frames = 0;
 
